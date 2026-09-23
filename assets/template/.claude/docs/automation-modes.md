@@ -59,6 +59,17 @@ the right rule.
 
 **Set by**: `/start`, `/settings`.
 
+## Story execution checkpoint
+
+For `$ccgs-dev-story` and `$ccgs-story-done`, the game maker explicitly
+approves the story before implementation and accepts its evidence before
+`Status: Complete`, in **every** automation mode. A story approval covers
+routine source, test, and evidence-file edits within its stated scope,
+including creation of new files; do not ask "May I write?" per file. A
+scope, acceptance-criteria, consequential gameplay/architecture, or engine
+change needs a new story decision before that work. Other skills and
+non-story writes keep the mode rules below.
+
 ---
 
 ## Universal Rules per Mode

@@ -1,6 +1,6 @@
 ---
 name: ccgs-dev-story
-description: "In a CCGS game project, implement a story: ADR guidelines, right programmer agent, code plus test. After $ccgs-story-readiness, before $ccgs-code-review and $ccgs-story-done."
+description: "In a CCGS game project, approve and implement one story with code, test, review, and final acceptance."
 ---
 
 ## Codex runtime
@@ -14,9 +14,10 @@ Resolved above — use as-is. No block → defaults in
 
 # Dev Story
 
-This skill bridges planning and code. It reads a story file in full, assembles
-all the context a programmer needs, routes to the correct specialist agent, and
-drives implementation to completion — including writing the test.
+This skill bridges planning and code. The primary Codex agent reads the story,
+gets the game maker's approval, implements within that scope, verifies the work,
+and continues through review and final acceptance. Consult a specialist only
+for a bounded question that needs its expertise.
 
 **The loop for every story:**
 ```
@@ -26,6 +27,10 @@ $ccgs-dev-story [path]         ← implement it  (this skill)
 $ccgs-code-review [files]      ← review it
 $ccgs-story-done [path]        ← verify and close it
 ```
+
+Run the last three steps in the same Codex task after the story is approved.
+The user need not invoke each skill separately. Do not set `Status: Complete`
+here; only `$ccgs-story-done` may do so after the final human checkpoint.
 
 **After all sprint stories are done:** run `$ccgs-team-qa sprint` to execute the full QA cycle and get a sign-off verdict before advancing the project stage.
 
@@ -46,11 +51,11 @@ project value. Resolve it at the start of Phase 2 (the story header is
 read there) and apply it to the prerequisite gate.
 
 **`story_granularity`** — it sets the
-expected implementation cycle: **multi-day** at `coarse` (give the programmer
-subagent longer working context), **1–2 days** at `balanced` (default), **hours**
+expected implementation cycle: **multi-day** at `coarse`, **1–2 days** at
+`balanced` (default), **hours**
 at `fine` (tighter context). It does not change the prerequisite gate.
 
-**`qa.level`**: controls whether the programmer brief carries
+**`qa.level`**: controls whether the implementation brief carries
 a test requirement. At `minimal`, omit the "Test requirement" line (Phase 4 item 7)
 — tests are not required; at `standard`, include the per-type test requirement; at
 `full`, also pass a coverage target. Distinct from `workflow: minimal`. When tests
@@ -62,6 +67,11 @@ are not required (`minimal`), the Phase 5 `testing.strict` gate is a no-op.
 
 **If no argument**: check `production/session-state/active.md` for the active
 story. If found, confirm: "Continuing work on [story title] — is that correct?"
+Read the story's `Status:` and `**Story Approval**:` fields and any pending
+decision in session state. An In Progress story with recorded approval and no
+pending decision resumes without repeating the story approval checkpoint. If
+approval is missing or a scope decision is pending, do not infer consent from
+In Progress status; show the approval card or pending decision before edits.
 If not found, ask: "Which story are we implementing?" Glob
 `production/epics/**/*.md` and list stories with Status: Ready.
 
@@ -77,7 +87,7 @@ If not found, ask: "Which story are we implementing?" Glob
 | Governing ADR | path from story's ADR field | **STOP** — "ADR file [path] not found. Run `$ccgs-architecture-decision` to create it, or correct the filename in the story's ADR field." | **STOP only if the story references an ADR** and its file is missing/Proposed; if it references none, proceed | no ADR required — proceed |
 | Control manifest | `docs/architecture/control-manifest.md` | **WARN and continue** — "Control manifest not found — layer rules cannot be checked. Run `$ccgs-create-control-manifest`." | WARN and continue | skip — not expected |
 
-At `full`, if the TR registry or governing ADR is missing, set the story status to **BLOCKED** in the session state and do not spawn any programmer agent. At `standard`/`minimal`, only a story that references an ADR whose file is **missing or `Proposed`** is set BLOCKED; a missing TR registry, or an absent-by-design ADR, does **not** block — implement against the story's acceptance criteria + the GDD/brief.
+At `full`, if the TR registry or governing ADR is missing, set the story status to **BLOCKED** in the session state and stop before approval or implementation. At `standard`/`minimal`, only a story that references an ADR whose file is **missing or `Proposed`** is set BLOCKED; a missing TR registry, or an absent-by-design ADR, does **not** block — implement against the story's acceptance criteria + the GDD/brief. For every referenced ADR at every tier, read its `## Status` value before the approval card: `Proposed` blocks with that ADR's path and the recommendation `$ccgs-architecture-decision [path]`; an unreadable status is `NOT ASSESSED` and stops before approval. The `Last Verified` stamp below checks freshness, not acceptance.
 
 Read the story file and the TR registry simultaneously — these two are
 genuinely independent, unconditional reads. **The governing ADR is not part
@@ -166,7 +176,7 @@ If **[A]**: first check the ADR's size — `Bash: wc -c "docs/architecture/[adr-
 
 Then update the story's `ADR Version` to the current date so the next run is clean.
 If **[B]**: proceed on the summary; record it in the Phase 6 "Deviations" summary.
-If **[C]**: stop. Do not spawn any agent.
+If **[C]**: stop before implementation.
 
 ### The control manifest
 Read only this story's layer from `docs/architecture/control-manifest.md` — grep that one
@@ -183,9 +193,9 @@ If they differ, use `Codex user-input tool` before proceeding:
   - `[B] Implement with old rules — I accept the risk of non-compliance`
   - `[C] Stop here — I want to review the manifest diff first`
 
-If [A]: edit the story file's `Manifest Version:` field to the current manifest date before spawning the programmer. Then read the manifest carefully for new rules.
+If [A]: edit the story file's `Manifest Version:` field to the current manifest date before implementation. Then read the manifest carefully for new rules.
 If [B]: edit the story file's `Manifest Version:` field to the current manifest date AND add a `Manifest-Note: Proceeded with old manifest rules on [date] — non-compliance risk accepted.` line to the story header. Read the manifest for new rules anyway. Note the decision in the Phase 6 summary under "Deviations". `$ccgs-story-done` will include the Manifest-Note in its deviations section without re-checking staleness.
-If [C]: stop. Do not spawn any agent. Let the user review and re-run `$ccgs-dev-story`.
+If [C]: stop before implementation. Let the user review and re-run `$ccgs-dev-story`.
 
 ### Dependency validation
 
@@ -200,7 +210,7 @@ After extracting the **Dependencies** list from the story file, validate each:
        - `[A] Proceed anyway — I accept the dependency risk`
        - `[B] Stop — I'll complete the dependency first`
        - `[C] The dependency is done but status wasn't updated — mark it Complete and continue`
-   - If [B]: set story status to **BLOCKED** in session state and stop. Do not spawn any programmer agent.
+   - If [B]: set story status to **BLOCKED** in session state and stop before implementation.
    - If [C]: ask "May I update [dependency path] Status to Complete?" before continuing.
    - If [A]: note in Phase 6 summary under "Deviations": "Implemented with incomplete dependency: [dependency title] — [status]."
 
@@ -218,9 +228,43 @@ Read from `project.yaml` first, falling back to `.claude/docs/technical-preferen
 - `performance.*` (else Performance budgets) — frame budget, memory ceiling
 - Forbidden patterns — from `.claude/docs/technical-preferences.md` (not migrated to project.yaml)
 
+### Story approval checkpoint
+
+For a new Ready story, run `$ccgs-story-readiness [story-path]` after context
+and dependency validation. Continue only on READY. If readiness reports that
+legacy handoff fields are absent, derive a proposed `Handoff Class` and
+`Verification Method` from the acceptance criteria and configured commands;
+do not infer Technical from `Type: Logic`. A player-observable result such
+as an enemy hit reaction is `Player-facing`; use `Mixed` only when separate
+technical acceptance criteria also require their own evidence. Player-facing
+and Mixed methods
+include play setup/steps and an evidence path, plus any configured build/test
+command. Do not write the proposed fields until approval.
+
+Before changing `Status:`, source, or test files, present one card:
+
+```markdown
+Story: [path and goal]
+Scope: [files or boundaries, including Out of Scope]
+Acceptance criteria: [every criterion]
+Handoff Class: [Player-facing | Technical | Mixed]
+Verification Method: [build/test command, evidence path, and play steps if required]
+Decision: [Approve this story | Revise the story]
+```
+
+This is a human checkpoint in every automation mode. Wait for an explicit
+`Approve this story`; no response or `Revise the story` stops implementation.
+On approval, write the approved handoff fields if absent, then write
+`**Story Approval**: YYYY-MM-DD` near the story header. Append the story path,
+approval date, handoff class, verification method, and `Pending decision: None`
+to `production/session-state/active.md`. If the file does not exist, create
+it. An approved In Progress resume with no pending decision skips this card.
+The approval covers routine source, test, and evidence-file edits within scope;
+do not ask again for each new file.
+
 ### Mark Story In Progress
 
-Silently update two things before spawning any agent:
+Only after story approval, silently update two things before implementation:
 
 1. **`production/sprint-status.yaml`** (if it exists): find the entry matching this story's file path and set `status: in_progress`. Update the top-level `updated` field to today's date. If the file does not exist, say so in one line — `Sprint status not updated: production/sprint-status.yaml absent` — and continue. Do not skip silently: `$ccgs-sprint-status` reads that file to report progress, so a story that never gets marked `in_progress` is invisible to the very command a producer uses to ask what is moving.
 
@@ -228,17 +272,19 @@ Silently update two things before spawning any agent:
 
 ---
 
-## Phase 3: Route to the Right Programmer
+## Phase 3: Select Bounded Specialist Consultation
 
-Based on the story's **Layer**, **Type**, and **system name**, determine which
-specialist to spawn via `Agent`.
+The primary agent owns implementation. Use the table below only when a
+specific engine risk or task benefits from specialist expertise. Give a
+specialist a bounded question and relevant file paths; do not delegate the
+whole story by default. Record which consultation ran or was skipped and why.
 
-**Config/Data stories — skip agent spawning entirely:**
-If the story's Type is `Config/Data`, no programmer agent or engine specialist is needed. Jump directly to Phase 4 (Config/Data note). The implementation is a data file edit — no routing table evaluation, no engine specialist.
+**Config/Data stories — skip specialist routing:**
+If the story's Type is `Config/Data`, jump directly to Phase 4 (Config/Data note). The implementation is a data file edit; the primary agent can do it without specialist consultation.
 
-### Primary agent routing table
+### Optional implementation specialist table
 
-| Story context | Primary agent |
+| Story context | Optional specialist |
 |---|---|
 | Foundation layer — any type | `engine-programmer` |
 | Any layer — Type: UI | `ui-programmer` |
@@ -248,7 +294,7 @@ If the story's Type is `Config/Data`, no programmer agent or engine specialist i
 | Core or Feature — networking, replication | `network-programmer` |
 | Config/Data — no code | No agent needed (see Phase 4 Config note) |
 
-### Engine specialist — always spawn as secondary for code stories
+### Engine specialist — consult for a concrete risk
 
 **Read the `specialists` block from `project.yaml` directly — it is not in
 the `resolve_config` output at the top of this skill..** `resolve_config` does not emit
@@ -277,13 +323,16 @@ specialist implements here" — resolved from the engine *and the language*, whi
    `## Engine Specialists` section of `.claude/docs/technical-preferences.md`.
 
 **A value of `null` means UNSET — treat that key as absent and fall through to
-the generic specialist. Never spawn it as an agent name.** The config reader
+the generic specialist. Never use it as an agent name.** The config reader
 returns the four-character string `"null"`, which is not empty and therefore
 reads as configured; `null`, empty and missing are the same state here. (This is
 the same caveat `$ccgs-code-review` Phase 2 carries, for the same reason.)
 
-Spawn the resolved specialist alongside the primary agent when the story involves
-engine-specific APIs, patterns, or the ADR has HIGH engine risk.
+Consult the resolved specialist on the specific engine API or pattern when the
+story involves engine-specific risk or the ADR has HIGH engine risk. Pass the
+named question and targeted file paths. If a specialist cannot run, report
+`NOT ASSESSED — specialist unavailable` for that consultation and still run
+the available parse, test, and run checks; do not claim the missing review passed.
 
 The full roster, for reference when no `specialists` block exists:
 
@@ -298,16 +347,17 @@ The full roster, for reference when no `specialists` block exists:
 > table instead of the block is how a Godot C# project ends up reviewed by the
 > GDScript specialist.
 
-**When engine risk is HIGH** (from the ADR or VERSION.md): always spawn the engine
-specialist, even for non-engine-facing stories. High risk means the ADR records
-assumptions about post-cutoff engine APIs that need expert verification.
+**When engine risk is HIGH** (from the ADR or VERSION.md): consult the engine
+specialist on the named risk, including for non-engine-facing stories when
+the ADR depends on a post-cutoff API assumption. If unavailable, preserve
+the unanswered question as NOT ASSESSED while running available checks.
 
 > **Read the risk, do not trust the story card alone.** If the story's `Risk`
 > field is absent, or says `NOT ASSESSED`, **or disagrees with
 > `docs/engine-reference/<engine>/VERSION.md`, the VERSION.md rating wins** and an
 > unknown counts as HIGH. At `minimal` there is no ADR, so VERSION.md is the only
 > source; a story card carrying an improvised `MEDIUM` against a VERSION.md
-> rating of HIGH would skip this spawn without saying so — which is how two wrong engine
+> rating of HIGH would skip this consultation without saying so — which is how two wrong engine
 > defaults reached a project unreviewed. `$ccgs-create-stories` now derives the field
 > from the same file, so the two should agree; this check is what catches it when
 > they do not.
@@ -316,9 +366,12 @@ assumptions about post-cutoff engine APIs that need expert verification.
 
 ## Phase 4: Implement
 
-Spawn the chosen programmer agent(s) via `Agent` with the full context package:
+The primary agent implements the approved story. For a bounded consultation,
+brief the chosen specialist with the relevant subset of this context package:
 
-Brief the agent with file paths and targeted reading instructions — do not serialize document content into the `Agent` prompt. The agent reads what it needs directly.
+Brief any specialist with file paths and targeted reading instructions — do
+not serialize whole documents into the `Agent` prompt. The primary agent
+keeps responsibility for edits, test results, and final handoff.
 
 > **Tier note (from Phase 2):** items 2–4 below assume the `full` baseline. At
 > `standard`, include the TR registry only if it exists and the governing ADR
@@ -336,7 +389,7 @@ Brief the agent with file paths and targeted reading instructions — do not ser
 >   story — `docs/architecture/tr-registry.yaml` does not exist at this tier.
 >   Implement against the story's Acceptance Criteria and the GDD/brief. Do not
 >   go looking for it."* Same form for an absent ADR or control manifest.
-> - **To the user**, one line before spawning: `Briefing omits: TR registry
+> - **To the user**, one line before implementation: `Briefing omits: TR registry
 >   (absent), control manifest (absent) — implementing against acceptance
 >   criteria + GDD.`
 >
@@ -353,11 +406,21 @@ Brief the agent with file paths and targeted reading instructions — do not ser
 7. **Test requirement** (Logic and Integration stories only; **omit this entire item at `qa.level: minimal`** — tests are not required there. When you omit it, tell the agent so explicitly: *"Do not write a test file for this story — test evidence is waived at `qa.level: minimal`."* An omitted item and a forgotten one are indistinguishable to the agent, and a programmer briefed with no test instruction may write tests anyway, or may silently assume they were meant to): The test file MUST be created at `[path from the story's Test Evidence section]`. Write the test alongside the implementation — do not defer it. At `qa.level: standard`/`full` the story cannot be closed via `$ccgs-story-done` without this file present. Each acceptance criterion must have at least one test function covering it. Test file naming: `[system]_[feature]_test.[ext]`. Function naming: `test_[scenario]_[expected_outcome]`. No random seeds, no time-dependent assertions, no external I/O.
 8. **Explicit instruction**: implement this story following the ADR guidelines, respect the manifest rules, stay within the story's Out of Scope boundaries. Write clean, doc-commented public APIs.
 
-The agent should:
+The primary agent should:
 - Create or modify files under the **resolved code root** following the ADR guidelines. Resolve it per `.claude/docs/code-root-resolution.md` — `src/` is the Godot row, `Assets/Scripts/<System>/` is Unity's, `Source/<Module>/<System>/` is Unreal's. **If the code root cannot be resolved, do not write: report it and stop.** Selecting the engine specialist above is NOT the same as resolving the code root
 - Respect all Required and Forbidden patterns from the control manifest
 - Stay within the story's Out of Scope boundaries (do not touch unrelated files)
 - Write clean, doc-commented public APIs
+
+If implementation discovers a required file outside the approved scope, a
+change to acceptance criteria, a consequential gameplay or architecture
+choice, or an engine change, stop before making that change. Append
+`Pending decision: [story path, affected file or decision, proposed scope]`
+to `production/session-state/active.md`; keep completed in-scope work.
+Present the revised story approval card and wait. On approval, update the
+story's scope and `Story Approval` record, clear the pending decision in
+session state, then resume. A later session with a pending decision must not
+continue implementation until that decision is resolved.
 
 ### Config/Data stories (no agent needed)
 
@@ -368,7 +431,8 @@ changed from/to.
 
 ### Visual/Feel stories
 
-Spawn `gameplay-programmer` to implement the code/animation calls. The *look*
+The primary agent implements the code/animation calls, consulting
+`gameplay-programmer` only for a bounded need. The *look*
 half of the acceptance criteria — layout, clipping, presence, colour — is
 verified in Phase 6 step 4 by launching the build and retaining a screenshot;
 it is not deferred. The *feel* half — timing, weight, responsiveness — is not
@@ -379,7 +443,7 @@ something a still can show: say which half the run covered, and leave feel to
 
 ## Phase 5: Test Evidence Requirements
 
-The test requirement was included in the Phase 4 programmer agent brief (item 7). This phase summarizes what evidence each story type requires — used when collecting the Phase 6 summary.
+The test requirement was included in the Phase 4 implementation brief (item 7). This phase summarizes what evidence each story type requires — used when collecting the Phase 6 summary.
 
 **Skip this phase at `qa.level: minimal`** (resolved earlier) — no test evidence
 is required, so there is nothing to gate; do not flag the story unverifiable for a
@@ -449,16 +513,17 @@ For Visual/Feel and UI stories, include in the Phase 6 summary: "Retained screen
 
 ### First: did the agent actually finish?
 
-**Do not assume completion.** A programmer agent can stop at its turn limit
-mid-edit, and the work it leaves behind can be syntactically broken — a helper
+**Do not assume completion.** The primary agent or a bounded specialist can stop
+mid-edit, and the work left behind can be syntactically broken — a helper
 called but never defined, an import half-moved. Its partial report reads like
 progress, and this phase's summary would print "Implementation Complete" over
 code that does not load.
 
 Before collecting anything:
 
-1. **Check the agent's own terminal state.** If it reported stopping early, hit a
-   turn/step limit, or its report ends mid-task, treat the story as **INCOMPLETE**.
+1. **Check implementation state.** If the primary agent or a specialist stopped
+   early, hit a turn/step limit, or left a partial artifact, treat the story as
+   **INCOMPLETE**.
 2. **Verify the output parses.** Run the cheapest check the engine offers —
    `commands.test` or `commands.smoke` from `project.yaml`, or for Godot
    `godot --headless --path . --import`, which surfaces parse errors without
@@ -483,7 +548,7 @@ Before collecting anything:
    at `qa.level: minimal`**; tests are, the look is not.
 
 **If INCOMPLETE:** say so as the headline, list what exists so far, name the
-specific breakage, and offer to resume the agent. Do **not** emit
+specific breakage, and resume the unfinished in-scope work. Do **not** emit
 "Implementation Complete", and do not advance the story's status.
 
 ### Then collect:
@@ -517,11 +582,17 @@ Present a concise implementation summary:
 
 **Deviations from scope**: [None] or [list files touched outside story boundary]
 **Engine risks flagged**: [None] or [specialist finding]
+**Specialist consultation**: [name and bounded question + result | SKIPPED — reason | NOT ASSESSED — unavailable]
 **Blockers**: [None] or [describe]
 
-**Before running `$ccgs-story-done`:** run your test suite locally and confirm the tests you wrote pass. *(At `qa.level: minimal` no tests were written — print the Phase 5 waiver line here instead of this paragraph. Telling a user to confirm the passing of tests that do not exist is worse than saying nothing.)* **`$ccgs-story-done` does NOT re-run them** — its Phase 3 checks that the test FILE exists, with `Glob`, and nothing executes it. A test that exists and fails satisfies that gate. Nothing downstream makes the local run safe to skip. Pass/fail is established by `$ccgs-gate-check` and `$ccgs-smoke-check`, both of which execute a suite — and both come later than story closure.
+**Before running `$ccgs-story-done`:** the primary agent runs the story's
+configured test command and records the exact result. At `qa.level: minimal`,
+print the Phase 5 waiver line when no test is required. If no runner is
+configured or available, report `NOT VERIFIED — <reason>`; a test file's
+existence alone is not a passing result. `$ccgs-story-done` consumes this
+result and must not promote an unrun test to PASS.
 
-Ready for: `$ccgs-code-review [file1] [file2]` then `$ccgs-story-done [story-path]`
+Next in this same task: `$ccgs-code-review [file1] [file2]` then `$ccgs-story-done [story-path]`
 ```
 
 ---
@@ -540,6 +611,11 @@ Silently append to `production/session-state/active.md`:
 ```
 
 Create `active.md` if it does not exist. Confirm: "Session state updated."
+
+Continue in this same task to `$ccgs-code-review [changed files]`, resolve
+in-scope required fixes and re-run affected checks, then invoke
+`$ccgs-story-done [story-path]` for the final human acceptance checkpoint.
+Do not ask the user to start these skills manually.
 
 ---
 
@@ -570,7 +646,11 @@ Common blockers:
 `autonomous` modes, see `.claude/docs/automation-modes.md` — the rules below
 describe what collaborative mode requires, not universal behavior.
 
-- **File writes are delegated** — all source code, test files, and evidence docs are written by sub-agents spawned via `Agent`. Each sub-agent enforces the "May I write to [path]?" protocol individually. This orchestrator does not write files directly.
+- **Story approval covers in-scope writes** — the primary agent may create or
+  update source, test, and evidence files within the approved story without a
+  separate "May I write?" prompt, including in collaborative mode. Optional
+  specialists follow the same approved scope. New scope requires a new story
+  decision, not per-file permission.
 - **Load before implementing** — do not start coding until all context is loaded
   (story, TR-ID, ADR, manifest, engine prefs). Incomplete context produces code
   that drifts from design.
@@ -594,6 +674,5 @@ describe what collaborative mode requires, not universal behavior.
 
 ## Recommended Next Steps
 
-- Run `$ccgs-code-review [file1] [file2]` to review the implementation before closing the story
-- Run `$ccgs-story-done [story-path]` to verify acceptance criteria and mark the story complete
+- Continue to `$ccgs-code-review [file1] [file2]` and `$ccgs-story-done [story-path]` in the current task; final acceptance stays with the game maker
 - After all sprint stories are done: run `$ccgs-team-qa sprint` for the full QA cycle before advancing the project stage

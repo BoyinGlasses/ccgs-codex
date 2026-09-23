@@ -12,6 +12,12 @@
 5. **No Unilateral Cross-Domain Changes**: An agent must never modify files
    outside its designated directories without explicit delegation.
 
+**Ordinary story execution:** `$ccgs-dev-story` uses one primary Codex agent
+to implement the story after the game maker approves its scope. The primary
+agent may consult a specialist for a bounded question; the leadership tiers
+above are not mandatory for routine story work. A real cross-domain conflict
+or a proposed change outside approved scope still escalates before that work.
+
 ## Model Tier Assignment
 
 Read `.claude/docs/model-tiers.md` on demand. It carries the tier table, the
