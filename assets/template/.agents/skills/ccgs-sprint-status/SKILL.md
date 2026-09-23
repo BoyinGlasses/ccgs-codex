@@ -1,0 +1,225 @@
+---
+name: ccgs-sprint-status
+description: "In a CCGS game project, fast, concise sprint snapshot — burndown and emerging risks for situational awareness. 'How is the sprint going?'"
+---
+
+## Codex runtime
+
+Work from the game project root. Use Codex's available file, shell, web, and user-input tools. When this workflow names a studio role, select the corresponding `.codex/agents/<role>.toml` with a Codex subagent tool if available; otherwise read the role definition and perform the role directly. Wait for user answers at decision points. Treat `project.yaml` and `.claude/docs/` as project data. Run shell snippets explicitly; Claude-style inline `!` commands are not automatically executed by Codex.
+
+At runtime, execute this shell snippet if needed: `source "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/yaml-helper.sh" 2>/dev/null && resolve_config --keys story_granularity`
+# Sprint Status
+
+This is a fast situational awareness check, not a sprint review. It reads the
+current sprint plan and story files, scans for status markers, and produces a
+concise snapshot in under 30 lines. For detailed sprint management, use
+`$ccgs-sprint-plan update` or `$ccgs-milestone-review`.
+
+**This skill is read-only.** It never proposes changes, never asks to write
+files, and makes at most one concrete recommendation.
+
+**`story_granularity`** — it sets the
+grain of the burn-down read: **feature-sized** chunks at `coarse`, **task-sized**
+at `balanced` (default), **AC-sized** at `fine`.
+
+---
+
+## 1. Find the Sprint
+
+**Argument:** `$ARGUMENTS[0]` (blank = use current sprint)
+
+- If an argument is given (e.g., `$ccgs-sprint-status 3`), search
+  `production/sprints/` for a file matching `sprint-03.md`, `sprint-3.md`,
+  or similar. Report which file was found.
+- If no argument is given, find the most recently modified file in
+  `production/sprints/` and treat it as the current sprint.
+- If `production/sprints/` does not exist or is empty, report: "No sprint
+  files found. Start a sprint with `$ccgs-sprint-plan new`." Then stop.
+
+Read the sprint file in full. Extract:
+- Sprint number and goal
+- Start date and end date
+- All story or task entries with their priority (Must Have / Should Have /
+  Nice to Have), owner, and estimate
+
+---
+
+## 2. Calculate Days Remaining
+
+Using today's date and the sprint end date from the sprint file, calculate:
+- Total sprint days (end minus start)
+- Days elapsed
+- Days remaining
+- Percentage of time consumed
+
+If the sprint file does not include explicit dates, note "Sprint dates not
+found — burndown assessment skipped."
+
+---
+
+## 3. Scan Story Status
+
+**First: check for `production/sprint-status.yaml`.**
+
+If it exists, read it directly — it is the authoritative source of truth.
+Extract status for each story from the `status` field. No markdown scanning needed.
+Use its `sprint`, `goal`, `start`, `end` fields instead of re-parsing the sprint plan.
+
+**If `sprint-status.yaml` does not exist** (legacy sprint or first-time setup),
+fall back to markdown scanning:
+
+1. If the entry references a story file path, check if the file exists.
+   Read the file and scan for status markers: DONE, COMPLETE, IN PROGRESS,
+   BLOCKED, NOT STARTED (case-insensitive).
+2. If the entry has no file path (inline task in the sprint plan), scan the
+   sprint plan itself for status markers next to that entry.
+3. If no status marker is found, classify as NOT STARTED.
+4. If a file is referenced but does not exist, classify as MISSING and note it.
+
+When using the fallback, add a note at the bottom of the output:
+"⚠ No `sprint-status.yaml` found — status inferred from markdown. Run `$ccgs-sprint-plan update` to generate one."
+
+Optionally (fast check only — do not do a deep scan): grep the code root for a
+directory or file name that matches the story's system slug to check for
+implementation evidence. This is a hint only, not a definitive status.
+
+### Stale Story Detection
+
+After collecting status for all stories, check each IN PROGRESS story for staleness:
+
+- Resolve the dates with **one grep across the story set, not a read per story**
+  — a date is a single line, and opening every in-progress story to find it is
+  the whole cost of this check:
+  ```
+  Grep pattern="\*{0,2}(Last Updated|Updated|last-updated|updated_at)\*{0,2}[[:space:]]*:" glob="production/epics/**/story-*.md" output_mode="content"
+  ```
+  That one pattern accepts every field-name variant. A story with no match has
+  **no date**, which is not the same as being stale — report it as "never
+  stamped" and do not compute an age for it.
+
+> **The `\*{0,2}` wrappers are why this works at all.** `$ccgs-create-stories` emits
+> `> **Last Updated**: …`, so a pattern requiring `:` immediately after the word
+> matched no story ever written. Combined with the "no match = never stamped"
+> rule directly above — which is correct in itself — the failure was completely
+> silent: every in-progress story reported as never stamped, and stale-story
+> detection never once fired. A bare `Updated:` anchor will regress it.
+- Calculate days since that date using today's date.
+- If the date is more than 4 days ago, flag the story as **STALE**. (4-day threshold accounts for weekends — a story last touched on Friday won't appear stale until Wednesday.)
+- If no date field is found in the story file, note "no timestamp — cannot check staleness."
+- If the story has no referenced file (inline task), note "inline task — cannot check staleness."
+
+STALE stories are included in the output table and collected into an "Attention Needed"
+section (see Phase 5 output format).
+
+**Stale story escalation**: If any IN PROGRESS story is flagged STALE (no progress in 4+ days), the burndown verdict
+is upgraded to at least **At Risk** — even if the completion percentage is within the normal
+On Track window. Record this escalation reason: "At Risk — [N] story(ies) with no progress in
+[N] days."
+
+---
+
+## 4. Burndown Assessment
+
+Calculate:
+- Tasks complete (DONE or COMPLETE)
+- Tasks in progress (IN PROGRESS)
+- Tasks blocked (BLOCKED)
+- Tasks not started (NOT STARTED or MISSING)
+- Completion percentage: (complete / total) * 100
+
+Assess burndown by comparing completion percentage to time consumed percentage:
+
+- **On Track**: completion % is within 10 points of time consumed % or ahead
+- **At Risk**: completion % is 10-25 points behind time consumed %
+- **Behind**: completion % is more than 25 points behind time consumed %
+
+If dates are unavailable, skip the burndown assessment and report "On Track /
+At Risk / Behind: unknown — sprint dates not found."
+
+---
+
+## 5. Output
+
+Keep the output concise. The story status table is mandatory — do not truncate it. Aim for under 50 lines total; omit the Emerging Risks section if nothing notable was found. Use this format:
+
+```markdown
+## Sprint [N] Status — [Today's Date]
+**Sprint Goal**: [from sprint plan]
+**Days Remaining**: [N] of [total] ([% time consumed])
+
+### Progress: [complete/total] tasks ([%])
+
+| Story / Task         | Priority   | Status      | Owner   | Blocker        |
+|----------------------|------------|-------------|---------|----------------|
+| [title]              | Must Have  | DONE        | [owner] |                |
+| [title]              | Must Have  | IN PROGRESS | [owner] |                |
+| [title]              | Must Have  | BLOCKED     | [owner] | [brief reason] |
+| [title]              | Should Have| NOT STARTED | [owner] |                |
+
+### Attention Needed
+| Story / Task         | Status      | Last Updated   | Days Stale | Note           |
+|----------------------|-------------|----------------|------------|----------------|
+| [title]              | IN PROGRESS | [date or N/A]  | [N days]   | [STALE / no timestamp — cannot check staleness / inline task — cannot check staleness] |
+
+*(Omit this section entirely if no IN PROGRESS stories are stale or have timestamp concerns.)*
+
+### Burndown: [On Track / At Risk / Behind]
+[1-2 sentences. If behind: which Must Haves are at risk. If on track: confirm
+and note any Should Haves the team could pull.]
+
+### Must-Haves at Risk
+[List any Must Have stories that are BLOCKED or NOT STARTED with less than
+40% of sprint time remaining. If none, write "None."]
+
+### Emerging Risks
+[Any risks visible from the story scan: missing files, cascading blockers,
+stories with no owner. If none, write "None identified."]
+
+### Recommendation
+[One concrete action, or "Sprint is on track — no action needed."]
+```
+
+---
+
+## 6. Fast Escalation Rules
+
+Apply these rules before outputting, and place the flag at the TOP of the
+output if triggered (above the status table):
+
+**Critical flag** — if Must Have stories are BLOCKED or NOT STARTED and
+less than 40% of the sprint time remains:
+
+```
+SPRINT AT RISK: [N] Must Have stories are not complete with [X]% of sprint
+time remaining. Recommend replanning with `$ccgs-sprint-plan update`.
+```
+
+**Completion flag** — if all Must Have stories are DONE:
+
+```
+All Must Haves complete. Team can pull from Should Have backlog.
+```
+
+**Missing stories flag** — if any referenced story files do not exist:
+
+```
+NOTE: [N] story files referenced in the sprint plan are missing.
+Run `$ccgs-story-readiness sprint` to validate story file coverage.
+```
+
+---
+
+## Collaborative Protocol
+
+This skill is read-only. It reports observed facts from files on disk.
+
+- It does not update the sprint plan
+- It does not change story status
+- It does not propose scope cuts (that is `$ccgs-sprint-plan update`)
+- It makes at most one recommendation per run
+
+For more detail on a specific story, the user can read the story file directly
+or run `$ccgs-story-readiness [path]`.
+
+For sprint replanning, use `$ccgs-sprint-plan update`.
+For end-of-sprint retrospective, use `$ccgs-retrospective`.

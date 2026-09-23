@@ -1,0 +1,21 @@
+{
+  "name": "ccgs-codex",
+  "interface": {
+    "displayName": "Game Studios for Codex"
+  },
+  "plugins": [
+    {
+      "name": "ccgs-codex",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/BoyinGlasses/ccgs-codex.git",
+        "ref": "main"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

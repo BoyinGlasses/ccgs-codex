@@ -1,0 +1,21 @@
+{
+  "name": "ccgs-codex",
+  "version": "0.1.0+codex.20260923114717",
+  "description": "Codex port of Claude Code Game Studios workflows and project template.",
+  "author": {
+    "name": "Donchitos / Codex port"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Game Studios for Codex",
+    "shortDescription": "Game studio workflows and project template",
+    "longDescription": "The complete Claude Code Game Studios framework adapted for Codex projects.",
+    "developerName": "Donchitos / Codex port",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": "Create a new game project with Codex Game Studios."
+  }
+}

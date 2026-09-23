@@ -1,0 +1,109 @@
+{
+  "description": "CCGS validation and session hooks for Codex",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import runpy,sys;from pathlib import Path;p=next(p for p in (Path.cwd(),*Path.cwd().parents) if (p/'.codex/hooks/bridge.py').is_file());sys.argv=[str(p/'.codex/hooks/bridge.py'),sys.argv[1]];runpy.run_path(sys.argv[0],run_name='__main__')\" SessionStart",
+            "commandWindows": "python -c \"import runpy,sys;from pathlib import Path;p=next(p for p in (Path.cwd(),*Path.cwd().parents) if (p/'.codex/hooks/bridge.py').is_file());sys.argv=[str(p/'.codex/hooks/bridge.py'),sys.argv[1]];runpy.run_path(sys.argv[0],run_name='__main__')\" SessionStart",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import runpy,sys;from pathlib import Path;p=next(p for p in (Path.cwd(),*Path.cwd().parents) if (p/'.codex/hooks/bridge.py').is_file());sys.argv=[str(p/'.codex/hooks/bridge.py'),sys.argv[1]];runpy.run_path(sys.argv[0],run_name='__main__')\" PreToolUse",
+            "commandWindows": "python -c \"import runpy,sys;from pathlib import Path;p=next(p for p in (Path.cwd(),*Path.cwd().parents) if (p/'.codex/hooks/bridge.py').is_file());sys.argv=[str(p/'.codex/hooks/bridge.py'),sys.argv[1]];runpy.run_path(sys.argv[0],run_name='__main__')\" PreToolUse",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import runpy,sys;from pathlib import Path;p=next(p for p in (Path.cwd(),*Path.cwd().parents) if (p/'.codex/hooks/bridge.py').is_file());sys.argv=[str(p/'.codex/hooks/bridge.py'),sys.argv[1]];runpy.run_path(sys.argv[0],run_name='__main__')\" PostToolUse",
+            "commandWindows": "python -c \"import runpy,sys;from pathlib import Path;p=next(p for p in (Path.cwd(),*Path.cwd().parents) if (p/'.codex/hooks/bridge.py').is_file());sys.argv=[str(p/'.codex/hooks/bridge.py'),sys.argv[1]];runpy.run_path(sys.argv[0],run_name='__main__')\" PostToolUse",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import runpy,sys;from pathlib import Path;p=next(p for p in (Path.cwd(),*Path.cwd().parents) if (p/'.codex/hooks/bridge.py').is_file());sys.argv=[str(p/'.codex/hooks/bridge.py'),sys.argv[1]];runpy.run_path(sys.argv[0],run_name='__main__')\" PreCompact",
+            "commandWindows": "python -c \"import runpy,sys;from pathlib import Path;p=next(p for p in (Path.cwd(),*Path.cwd().parents) if (p/'.codex/hooks/bridge.py').is_file());sys.argv=[str(p/'.codex/hooks/bridge.py'),sys.argv[1]];runpy.run_path(sys.argv[0],run_name='__main__')\" PreCompact",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import runpy,sys;from pathlib import Path;p=next(p for p in (Path.cwd(),*Path.cwd().parents) if (p/'.codex/hooks/bridge.py').is_file());sys.argv=[str(p/'.codex/hooks/bridge.py'),sys.argv[1]];runpy.run_path(sys.argv[0],run_name='__main__')\" PostCompact",
+            "commandWindows": "python -c \"import runpy,sys;from pathlib import Path;p=next(p for p in (Path.cwd(),*Path.cwd().parents) if (p/'.codex/hooks/bridge.py').is_file());sys.argv=[str(p/'.codex/hooks/bridge.py'),sys.argv[1]];runpy.run_path(sys.argv[0],run_name='__main__')\" PostCompact",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import runpy,sys;from pathlib import Path;p=next(p for p in (Path.cwd(),*Path.cwd().parents) if (p/'.codex/hooks/bridge.py').is_file());sys.argv=[str(p/'.codex/hooks/bridge.py'),sys.argv[1]];runpy.run_path(sys.argv[0],run_name='__main__')\" Stop",
+            "commandWindows": "python -c \"import runpy,sys;from pathlib import Path;p=next(p for p in (Path.cwd(),*Path.cwd().parents) if (p/'.codex/hooks/bridge.py').is_file());sys.argv=[str(p/'.codex/hooks/bridge.py'),sys.argv[1]];runpy.run_path(sys.argv[0],run_name='__main__')\" Stop",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import runpy,sys;from pathlib import Path;p=next(p for p in (Path.cwd(),*Path.cwd().parents) if (p/'.codex/hooks/bridge.py').is_file());sys.argv=[str(p/'.codex/hooks/bridge.py'),sys.argv[1]];runpy.run_path(sys.argv[0],run_name='__main__')\" SubagentStart",
+            "commandWindows": "python -c \"import runpy,sys;from pathlib import Path;p=next(p for p in (Path.cwd(),*Path.cwd().parents) if (p/'.codex/hooks/bridge.py').is_file());sys.argv=[str(p/'.codex/hooks/bridge.py'),sys.argv[1]];runpy.run_path(sys.argv[0],run_name='__main__')\" SubagentStart",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import runpy,sys;from pathlib import Path;p=next(p for p in (Path.cwd(),*Path.cwd().parents) if (p/'.codex/hooks/bridge.py').is_file());sys.argv=[str(p/'.codex/hooks/bridge.py'),sys.argv[1]];runpy.run_path(sys.argv[0],run_name='__main__')\" SubagentStop",
+            "commandWindows": "python -c \"import runpy,sys;from pathlib import Path;p=next(p for p in (Path.cwd(),*Path.cwd().parents) if (p/'.codex/hooks/bridge.py').is_file());sys.argv=[str(p/'.codex/hooks/bridge.py'),sys.argv[1]];runpy.run_path(sys.argv[0],run_name='__main__')\" SubagentStop",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}
