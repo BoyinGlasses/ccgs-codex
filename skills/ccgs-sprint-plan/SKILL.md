@@ -5,18 +5,18 @@ description: "In a CCGS game project, new or updated sprint plan from the curren
 
 ## Codex runtime
 
-Work from the game project root. Use Codex's available file, shell, web, and user-input tools. When this workflow names a studio role, select the corresponding `.codex/agents/<role>.toml` with a Codex subagent tool if available; otherwise read the role definition and perform the role directly. Wait for user answers at decision points. Treat `project.yaml` and `.claude/docs/` as project data. Run shell snippets explicitly; Claude-style inline `!` commands are not automatically executed by Codex.
+Work from the game project root. Use Codex's available file, shell, web, and user-input tools. When this workflow names a studio role, select the corresponding `.codex/agents/<role>.toml` with a Codex subagent tool if available; otherwise read the role definition and perform the role directly. Wait for user answers at decision points. Treat `project.yaml` and `.claude/docs/` as project data. Run POSIX shell snippets explicitly through Bash (Git Bash on Windows) from the game project root; Claude-style inline `!` commands are not automatically executed by Codex.
 
-At runtime, execute this shell snippet if needed: `source "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/yaml-helper.sh" 2>/dev/null && resolve_config --keys review_mode,automation,story_granularity,workflow`
-Resolved above — use as-is; `--review` overrides `review_mode`. No block →
+Run `source .claude/hooks/yaml-helper.sh && resolve_config --keys review_mode,automation,story_granularity,workflow`
+in Bash (Git Bash on Windows) from the project root. Use its output;
+`--review` overrides `review_mode`. If the helper is unavailable, use the
 defaults in `.claude/docs/config-resolution.md`.
 
 
 ## Existing Sprints
 
-At runtime, execute this shell snippet if needed: `ls production/sprints/ 2>/dev/null || echo "(no production/sprints/ directory yet)"`
-Resolved before this skill runs — use it to identify the previous sprint in
-Phase 1 rather than re-globbing.
+List `production/sprints/` to identify the previous sprint in Phase 1. If the
+directory does not exist, treat this as the first sprint.
 
 ---
 

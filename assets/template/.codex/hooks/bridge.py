@@ -14,7 +14,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 BASH = shutil.which("bash")
 if os.name == "nt":
-    BASH = str(Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Git" / "bin" / "bash.exe")
+    git = shutil.which("git")
+    candidates = [Path(git).parent.parent / "bin" / "bash.exe"] if git else []
+    candidates.append(Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Git" / "bin" / "bash.exe")
+    BASH = next((str(path) for path in candidates if path.is_file()), None)
 
 EVENTS = {
     "SessionStart": ["session-start.sh", "detect-gaps.sh"],
@@ -43,6 +46,8 @@ def inputs(event: str, data: dict) -> list[dict]:
 
 
 def run(event: str, data: dict) -> tuple[bool, str]:
+    if not BASH:
+        raise FileNotFoundError("Git Bash is required for CCGS hooks")
     env = os.environ.copy()
     env["CLAUDE_PROJECT_DIR"] = str(ROOT)
     messages = []

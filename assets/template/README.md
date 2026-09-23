@@ -1,3 +1,16 @@
+# Codex Game Studios project
+
+This project uses [AGENTS.md](AGENTS.md) and [project.yaml](project.yaml).
+Start with `$ccgs-start`, or use `$ccgs-help` to find the next workflow. Skills
+live in `.agents/skills/`, specialist agents in `.codex/agents/`, and hooks in
+`.codex/hooks.json`. See [CODEX-PORT.md](CODEX-PORT.md) for the Codex mapping.
+
+The upstream README below remains as reference. Its `/name` commands correspond
+to `$ccgs-name` skills in Codex; `CLAUDE.md` is source reference, while
+`AGENTS.md` governs this project.
+
+---
+
 <p align="center">
   <h1 align="center">Claude Code Game Studios</h1>
   <p align="center">

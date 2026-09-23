@@ -5,7 +5,7 @@ description: "In a CCGS game project, first-time onboarding — asks where you a
 
 ## Codex runtime
 
-Work from the game project root. Use Codex's available file, shell, web, and user-input tools. When this workflow names a studio role, select the corresponding `.codex/agents/<role>.toml` with a Codex subagent tool if available; otherwise read the role definition and perform the role directly. Wait for user answers at decision points. Treat `project.yaml` and `.claude/docs/` as project data. Run shell snippets explicitly; Claude-style inline `!` commands are not automatically executed by Codex.
+Work from the game project root. Use Codex's available file, shell, web, and user-input tools. When this workflow names a studio role, select the corresponding `.codex/agents/<role>.toml` with a Codex subagent tool if available; otherwise read the role definition and perform the role directly. Wait for user answers at decision points. Treat `project.yaml` and `.claude/docs/` as project data. Run POSIX shell snippets explicitly through Bash (Git Bash on Windows) from the game project root; Claude-style inline `!` commands are not automatically executed by Codex.
 
 # Guided Onboarding
 
@@ -150,11 +150,10 @@ The user needs creative exploration before anything else.
 After confirming the starting path, write the initial stage to BOTH `project.yaml` (primary) AND `production/stage.txt` (legacy fallback for hooks that haven't migrated yet). Create the `production/` directory if it does not exist.
 
 In `project.yaml`, ensure a `project:` block exists with `stage: [value]`.
-- **If `project.yaml` already exists**: Read it first (the Edit tool requires the
-  file to have been read in this session), then use the Edit tool to add/update
+- **If `project.yaml` already exists**: Read it first, then add/update
   the `project:` block, placing it immediately after the `framework:` block.
-- **If `project.yaml` does not exist** at the repo root: create it with the Write
-  tool using this v1.1 minimal template (replace `[value]` and the date):
+- **If `project.yaml` does not exist** at the repo root: create it using this
+  v1.1 minimal template (replace `[value]` and the date):
   ```yaml
   # CCGS project configuration — single source of truth for project settings.
   # Schema: grep the `## <key>` section of .claude/docs/effects-map.md —
@@ -233,7 +232,7 @@ Value mapping (ignore any ` (Recommended)` suffix on the first option):
 
 Write `modes.rigor` to `project.yaml` immediately after the user selects — no
 separate "May I write?" needed, as the write is a direct consequence of the
-selection. Use the Edit tool to add it under the `modes:` block. There is **no
+selection. Add it under the `modes:` block. There is **no
 legacy mirror file** for this setting, so this is a single write, not a dual-write.
 
 Then say: "Set `modes.rigor` to `[choice]`. That drives six settings —
@@ -270,7 +269,7 @@ Value mapping: `Collaborative` → `collaborative`, `Guided (recommended)` →
 
 Write `modes.automation` to `project.yaml` immediately after the user selects —
 no separate "May I write?" needed, as the write is a direct consequence of the
-selection. Use the Edit tool to add it under the `modes:` block. There is **no
+selection. Add it under the `modes:` block. There is **no
 legacy mirror file** for this setting.
 
 Then say: "Set `modes.automation` to `[choice]`. See

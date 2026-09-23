@@ -5,7 +5,7 @@ description: "In a CCGS game project, section-by-section GDD authoring for one s
 
 ## Codex runtime
 
-Work from the game project root. Use Codex's available file, shell, web, and user-input tools. When this workflow names a studio role, select the corresponding `.codex/agents/<role>.toml` with a Codex subagent tool if available; otherwise read the role definition and perform the role directly. Wait for user answers at decision points. Treat `project.yaml` and `.claude/docs/` as project data. Run shell snippets explicitly; Claude-style inline `!` commands are not automatically executed by Codex.
+Work from the game project root. Use Codex's available file, shell, web, and user-input tools. When this workflow names a studio role, select the corresponding `.codex/agents/<role>.toml` with a Codex subagent tool if available; otherwise read the role definition and perform the role directly. Wait for user answers at decision points. Treat `project.yaml` and `.claude/docs/` as project data. Run POSIX shell snippets explicitly through Bash (Git Bash on Windows) from the game project root; Claude-style inline `!` commands are not automatically executed by Codex.
 
 At runtime, execute this shell snippet if needed: `source "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/yaml-helper.sh" 2>/dev/null && resolve_config --keys review_mode,automation,workflow,docs.density,system_overrides`
 Resolved above — use as-is; `--review` overrides `review_mode`. No block →
@@ -80,7 +80,7 @@ existing `.md` file in `design/gdd/`, enter **retrofit mode**:
    skip creating the skeleton (file already exists) and in **Phase 4** skip
    sections that are already complete. Only run the section cycle for missing/
    incomplete sections.
-7. **Never overwrite existing section content.** Use Edit tool to replace only
+7. **Never overwrite existing section content.** Edit the file to replace only
    `[To be designed]` placeholders or empty section bodies.
 
 If NOT in retrofit mode, normalize the system name to kebab-case for the
@@ -534,10 +534,10 @@ Context  ->  Questions  ->  Options  ->  Decision  ->  Draft  ->  Approval  ->  
    `log_decision` with `Decision point: Approve [Section Name] section`,
    `Chosen: [A] Approve`, `Category: minor`.
 
-7. **Write**: Use the Edit tool to replace the placeholder with the approved content.
+7. **Write**: Replace the placeholder with the approved content.
    **CRITICAL**: Always include the section heading in the `old_string` to ensure
    uniqueness — never match `[To be designed]` alone, as multiple sections use the
-   same placeholder and the Edit tool requires a unique match. Use this pattern:
+   same placeholder and a text replacement requires a unique match. Use this pattern:
    ```
    old_string: "## [Section Name]\n\n[To be designed]"
    new_string: "## [Section Name]\n\n[approved content]"

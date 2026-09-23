@@ -1,11 +1,11 @@
 ---
 name: ccgs-setup-engine
-description: "In a CCGS game project, configure engine and version. Pins it in CLAUDE.md; WebSearch fills reference docs when the version is beyond LLM training data."
+description: "In a CCGS game project, configure engine and version in project.yaml, update the legacy technology stack mirror, and refresh engine reference docs from official sources."
 ---
 
 ## Codex runtime
 
-Work from the game project root. Use Codex's available file, shell, web, and user-input tools. When this workflow names a studio role, select the corresponding `.codex/agents/<role>.toml` with a Codex subagent tool if available; otherwise read the role definition and perform the role directly. Wait for user answers at decision points. Treat `project.yaml` and `.claude/docs/` as project data. Run shell snippets explicitly; Claude-style inline `!` commands are not automatically executed by Codex.
+Work from the game project root. Use Codex's available file, shell, web, and user-input tools. When this workflow names a studio role, select the corresponding `.codex/agents/<role>.toml` with a Codex subagent tool if available; otherwise read the role definition and perform the role directly. Wait for user answers at decision points. Treat `project.yaml` and `.claude/docs/` as project data. Run POSIX shell snippets explicitly through Bash (Git Bash on Windows) from the game project root; Claude-style inline `!` commands are not automatically executed by Codex.
 
 When this skill is invoked:
 
@@ -19,7 +19,8 @@ artifact this skill expects and the finish path it recommends in §12:
 - **`standard` / `full`** — the design artifact is `design/gdd/game-concept.md`
   and the finish path is the full pipeline.
 
-If the block did not render (shell preprocessing disabled), assume `standard`.
+Run the config snippet explicitly in Bash (Git Bash on Windows). If the helper is
+unavailable, use the documented `standard` default.
 
 ## 1. Parse Arguments
 
@@ -140,7 +141,7 @@ The user can select multiple topics. Answer each selected topic in depth before 
 Once the engine is chosen:
 
 - If version was provided, use it
-- If no version provided, use WebSearch to find the latest stable release:
+- If no version provided, search the web to find the latest stable release:
   - Search: `"[engine] latest stable version [current year]"`
   - Confirm with the user: "The latest stable [engine] is [version]. Use this?"
 
@@ -690,7 +691,7 @@ Show the user the full set of four blocks and ask:
 
 Wait for confirmation, then apply based on the file's current state:
 
-- **`project.yaml` does not exist** — create it with the Write tool using this
+- **`project.yaml` does not exist** — create it using this
   v1.1 template (the four blocks appended after `framework`; replace `<...>` and
   the date):
 
@@ -737,8 +738,7 @@ Wait for confirmation, then apply based on the file's current state:
   supplies its value, so an explicit value would shadow the rigor expansion and pin
   the review mode regardless of the project's rigor. Test Y.6 locks this in.
 
-- **`project.yaml` exists** — Read it first (the Edit tool requires the file to
-  have been read this session), then, processing the blocks in the order
+- **`project.yaml` exists** — read it first, then, processing the blocks in the order
   `engine` → `specialists` → `naming` → `commands`, for each block:
   - **Block absent** — insert the whole block, appended after the last existing
     top-level block.
@@ -1051,7 +1051,7 @@ The section should instruct the agent to:
 1. Read `docs/engine-reference/<engine>/VERSION.md`
 2. Check deprecated APIs before suggesting code
 3. Check breaking changes for relevant version transitions
-4. Use WebSearch to verify uncertain APIs
+4. Search the web to verify uncertain APIs
 
 ---
 
@@ -1061,7 +1061,7 @@ If invoked as `$ccgs-setup-engine refresh`:
 
 1. Read the existing `docs/engine-reference/<engine>/VERSION.md` to get
    the current engine and version
-2. Use WebSearch to check for:
+2. Search the web to check for:
    - New engine releases since last verification
    - Updated migration guides
    - Newly deprecated APIs
@@ -1084,7 +1084,7 @@ file.
 
 ### Step 2 — Fetch Migration Guide
 
-Use WebSearch and WebFetch to locate the official migration guide between
+Search the web and open the official migration guide between
 `old-version` and `new-version`:
 
 - Search: `"[engine] [old-version] to [new-version] migration guide"`
@@ -1226,14 +1226,14 @@ Verdict: **COMPLETE** — engine configured and reference docs populated.
 
 ## Guardrails
 
-- NEVER guess an engine version — always verify via WebSearch or user confirmation
+- NEVER guess an engine version — always verify from an official source or user confirmation
 - `project.yaml` is the primary config store (v1.1). Always dual-write engine
   config to BOTH `project.yaml` (primary) and `technical-preferences.md` (legacy
   mirror). If the two ever diverge, `project.yaml` is authoritative.
 - NEVER overwrite existing reference docs without asking — append or update
 - If reference docs already exist for a different engine, ask before replacing
 - Always show the user what you're about to change before making CLAUDE.md edits
-- If WebSearch returns ambiguous results, show the user and let them decide
+- If web search returns ambiguous results, show the user and let them decide
 - When the user chose **GDScript**: copy the GDScript CLAUDE.md template from **A1** in `.agents/skills/ccgs-setup-engine/references/godot-language-config.md` exactly. NEVER add "C++ via GDExtension" to the Language field. GDScript projects may use GDExtension, but it is not a primary project language. The `godot-gdextension-specialist` in the routing table is available for when native extensions are needed — it does not make C++ a project language.
 
 ---

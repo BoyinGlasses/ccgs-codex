@@ -5,7 +5,7 @@ description: "In a CCGS game project, is a story implementation-ready? Checks cl
 
 ## Codex runtime
 
-Work from the game project root. Use Codex's available file, shell, web, and user-input tools. When this workflow names a studio role, select the corresponding `.codex/agents/<role>.toml` with a Codex subagent tool if available; otherwise read the role definition and perform the role directly. Wait for user answers at decision points. Treat `project.yaml` and `.claude/docs/` as project data. Run shell snippets explicitly; Claude-style inline `!` commands are not automatically executed by Codex.
+Work from the game project root. Use Codex's available file, shell, web, and user-input tools. When this workflow names a studio role, select the corresponding `.codex/agents/<role>.toml` with a Codex subagent tool if available; otherwise read the role definition and perform the role directly. Wait for user answers at decision points. Treat `project.yaml` and `.claude/docs/` as project data. Run POSIX shell snippets explicitly through Bash (Git Bash on Windows) from the game project root; Claude-style inline `!` commands are not automatically executed by Codex.
 
 At runtime, execute this shell snippet if needed: `source "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/yaml-helper.sh" 2>/dev/null && resolve_config --keys review_mode,automation,workflow,qa.level,testing.strict,system_overrides`
 Resolved above — use as-is; `--review` overrides `review_mode`. No block →
@@ -390,7 +390,7 @@ After reporting findings, offer:
 draft the missing sections for your approval."
 
 If the user says yes for a specific story, draft only the missing sections
-in conversation. Do not use Write or Edit tools — the user (or
+in conversation. Do not modify files — the user (or
 `$ccgs-create-stories`) handles writing.
 
 **Redirect rules:**

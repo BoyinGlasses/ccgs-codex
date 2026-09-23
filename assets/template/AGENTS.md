@@ -1,7 +1,8 @@
 # Codex Game Studios
 
 This is the Codex port of Claude Code Game Studios. Start with `$ccgs-start` or `$ccgs-help`.
-The studio's original `CLAUDE.md` is archived for reference; this file governs Codex.
+The studio's original `CLAUDE.md` is retained as a legacy mirror and source
+reference; this file governs Codex.
 
 Read `project.yaml` for engine, stage, rigor, automation and team settings. Read
 `.claude/docs/coordination-rules.md` and `.claude/docs/coding-standards.md` when relevant.

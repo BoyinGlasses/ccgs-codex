@@ -5,7 +5,7 @@ description: "In a CCGS game project, auto-generate a changelog from git commits
 
 ## Codex runtime
 
-Work from the game project root. Use Codex's available file, shell, web, and user-input tools. When this workflow names a studio role, select the corresponding `.codex/agents/<role>.toml` with a Codex subagent tool if available; otherwise read the role definition and perform the role directly. Wait for user answers at decision points. Treat `project.yaml` and `.claude/docs/` as project data. Run shell snippets explicitly; Claude-style inline `!` commands are not automatically executed by Codex.
+Work from the game project root. Use Codex's available file, shell, web, and user-input tools. When this workflow names a studio role, select the corresponding `.codex/agents/<role>.toml` with a Codex subagent tool if available; otherwise read the role definition and perform the role directly. Wait for user answers at decision points. Treat `project.yaml` and `.claude/docs/` as project data. Run POSIX shell snippets explicitly through Bash (Git Bash on Windows) from the game project root; Claude-style inline `!` commands are not automatically executed by Codex.
 
 At runtime, execute this shell snippet if needed: `source "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/yaml-helper.sh" 2>/dev/null && resolve_config --keys automation`
 **Automation mode**: Resolve `modes.automation` (`project.local.yaml` →
@@ -16,19 +16,14 @@ every file write follows `.claude/docs/automation-modes.md`
 
 ## Recent History
 
-Recent commits:
-
-At runtime, execute this shell snippet if needed: `git log --oneline -30 2>/dev/null`
-Recent tags (newest first):
-
-At runtime, execute this shell snippet if needed: `git tag --list --sort=-v:refname 2>/dev/null | head -5`
+From the game project root, run `git log --oneline -30` for recent commits and
+`git tag --list --sort=-v:refname` for recent tags. Read the first five tags.
 ## Provenance check — before trusting the history above
 
-**The commits above may not belong to this game.** This skill's history blocks are
-auto-resolved *before* the body runs, so the read has already happened — what this
-check governs is whether that output is usable, not whether it is fetched.
+**The commits may not belong to this game.** Check the history you just read
+before using it as changelog source material.
 
-1. Read the injected commit subjects above.
+1. Read the commit subjects from the git log.
 2. **Classify each one** as **Game** (mechanics, content, balance, art, audio,
    UI, or a bug in those), **Framework / maintenance** (subjects naming skills,
    hooks, agents, the test plan, CI, or the framework's own docs), or **Unclear**
@@ -66,13 +61,12 @@ session-hook timeout rendered as a gameplay fix for a game with **no save
 system**. It was fluent, plausible, and entirely false. A reader cannot tell the
 difference; only this check can.
 
-**Do not treat the preamble's existence as evidence.** Injected output means the
-command ran, never that its subject is your game.
+**Do not treat a successful git log as evidence.** Its subjects must describe
+this game.
 
 ---
 
-Both blocks are resolved before this skill runs. Use them as the starting point
-for Phase 2 rather than re-running the same commands.
+Use the recent history and tags as the starting point for Phase 2.
 
 ---
 

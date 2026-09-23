@@ -5,7 +5,7 @@ description: "In a CCGS game project, ready to advance between development phase
 
 ## Codex runtime
 
-Work from the game project root. Use Codex's available file, shell, web, and user-input tools. When this workflow names a studio role, select the corresponding `.codex/agents/<role>.toml` with a Codex subagent tool if available; otherwise read the role definition and perform the role directly. Wait for user answers at decision points. Treat `project.yaml` and `.claude/docs/` as project data. Run shell snippets explicitly; Claude-style inline `!` commands are not automatically executed by Codex.
+Work from the game project root. Use Codex's available file, shell, web, and user-input tools. When this workflow names a studio role, select the corresponding `.codex/agents/<role>.toml` with a Codex subagent tool if available; otherwise read the role definition and perform the role directly. Wait for user answers at decision points. Treat `project.yaml` and `.claude/docs/` as project data. Run POSIX shell snippets explicitly through Bash (Git Bash on Windows) from the game project root; Claude-style inline `!` commands are not automatically executed by Codex.
 
 At runtime, execute this shell snippet if needed: `source "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/yaml-helper.sh" 2>/dev/null && resolve_config --keys review_mode,workflow,qa.level,testing.strict,performance.enforce,team.size,project.stage,system_overrides`
 Resolved above — use as-is; `--review` overrides `review_mode`. No block →
@@ -557,7 +557,7 @@ After drafting the verdict in Phase 5, challenge it before finalising.
 
 **Step 1 — Generate 5 challenge questions** designed to disprove the verdict:
 
-> **Tool-action requirement**: At least 2 of the 5 challenge questions below must be answered by re-reading a specific file (Read tool) or re-running a specific check (Grep tool) — not by reflection alone. Mark these with [TOOL ACTION] to indicate a tool was used.
+> **Tool-action requirement**: At least 2 of the 5 challenge questions below must be answered by re-reading a specific file or re-running a specific search — not by reflection alone. Mark these with [TOOL ACTION] to indicate a tool was used.
 
 For a **PASS** draft:
 - "Which quality checks did I verify by actually reading a file, vs. inferring they passed?"
@@ -613,13 +613,13 @@ Set `project.stage` to the new stage name in `project.yaml` at the repo root.
   tool requires the file to have been read in this session), then use the Edit
   tool to change its `stage:` value.
 - **If `project.yaml` exists but has no `project:` block**: Read `project.yaml`
-  first, then use the Edit tool to insert the block immediately after the
+  first, then insert the block immediately after the
   `framework:` block (before `modes:`). Insert exactly (replace `<new-stage>`):
   ```yaml
   project:
     stage: <new-stage>
   ```
-- **If `project.yaml` does not exist at all**: create it with the Write tool using
+- **If `project.yaml` does not exist at all**: create it using
   this v1.1 minimal template (replace `<new-stage>` and the date):
   ```yaml
   # CCGS project configuration — single source of truth for project settings.

@@ -5,7 +5,7 @@ description: "In a CCGS game project, what should I do next? Use when stuck or y
 
 ## Codex runtime
 
-Work from the game project root. Use Codex's available file, shell, web, and user-input tools. When this workflow names a studio role, select the corresponding `.codex/agents/<role>.toml` with a Codex subagent tool if available; otherwise read the role definition and perform the role directly. Wait for user answers at decision points. Treat `project.yaml` and `.claude/docs/` as project data. Run shell snippets explicitly; Claude-style inline `!` commands are not automatically executed by Codex.
+Work from the game project root. Use Codex's available file, shell, web, and user-input tools. When this workflow names a studio role, select the corresponding `.codex/agents/<role>.toml` with a Codex subagent tool if available; otherwise read the role definition and perform the role directly. Wait for user answers at decision points. Treat `project.yaml` and `.claude/docs/` as project data. Run POSIX shell snippets explicitly through Bash (Git Bash on Windows) from the game project root; Claude-style inline `!` commands are not automatically executed by Codex.
 
 # Studio Help — What Do I Do Next?
 
@@ -17,16 +17,22 @@ gap analysis, use `$ccgs-project-stage-detect`.
 
 ## Live Project State
 
-At runtime, execute this shell snippet if needed: `source "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/yaml-helper.sh" 2>/dev/null && resolve_config --keys project.stage,workflow`
-At runtime, execute this shell snippet if needed: `echo "Latest sprint: $(ls -t production/sprints/*.md 2>/dev/null | head -1 || echo 'none')"; echo "Session state: $(head -5 production/session-state/active.md 2>/dev/null || echo 'none')"`
-Both blocks are resolved before this skill runs. Use them as-is:
+Run these snippets explicitly in Bash (Git Bash on Windows) from the project root:
+
+```bash
+source .claude/hooks/yaml-helper.sh && resolve_config --keys project.stage,workflow
+echo "Latest sprint: $(ls -t production/sprints/*.md 2>/dev/null | head -1 || echo 'none')"
+echo "Session state: $(head -5 production/session-state/active.md 2>/dev/null || echo 'none')"
+```
+
+Use their output as follows:
 
 - **`project.stage`** from the config block is the authoritative phase for Step 2
   — it already applies the `project.yaml` → `production/stage.txt` fallback, and
   preserves values containing spaces (`Systems Design`).
 - **`workflow`** from the config block is the tier for Step 5 — do not re-read it.
-- If no config block rendered, shell preprocessing is disabled; fall back to the
-  defaults in `.claude/docs/config-resolution.md`.
+- If the helper is unavailable, read `project.yaml` and the documented fallbacks
+  in `.claude/docs/config-resolution.md`.
 
 ---
 
@@ -43,16 +49,17 @@ the artifact globs that indicate completion.
 After reading the catalog, Glob `.agents/skills/*/SKILL.md` to get the full list
 of installed skills. For each file, extract the `name:` field from its frontmatter.
 
-Compare against the `command:` values in the catalog. Any skill whose name does
-not appear as a catalog command is an **uncataloged skill** — still usable but not
+Compare against the `command:` values in the catalog after converting each
+`/name` to `ccgs-name`. Any skill whose name does not appear is an
+**uncataloged skill** — still usable but not
 part of the phase-gated workflow.
 
 Collect these for the output in Step 7 — show them as a footer block:
 
 ```
 ### Also installed (not in workflow)
-- `/skill-name` — [description from SKILL.md frontmatter]
-- `/skill-name` — [description]
+- `$ccgs-skill-name` — [description from SKILL.md frontmatter]
+- `$ccgs-skill-name` — [description]
 ```
 
 Only show this block if at least one uncataloged skill exists. Limit to the 10
@@ -90,7 +97,7 @@ Check in this order:
 
 ## Step 3: Read Session Context
 
-Read `production/session-state/active.md` if it exists — it is append-only and grows unbounded, and only the latest block is relevant, so read just the tail rather than the whole file: grep the last heading (`Grep pattern="^## (Session Extract|STATUS)" path="production/session-state/active.md" output_mode="content" -n`, take the highest line number) and `Read(offset=that line)`. Extract:
+Read `production/session-state/active.md` if it exists — it is append-only and grows unbounded, and only the latest block is relevant. Search for `^## (Session Extract|STATUS)`, take the highest line number, and read from there to the end. Extract:
 - What was most recently worked on
 - Any in-progress tasks or open questions
 - Current epic/feature/task from STATUS block (if present)
@@ -199,15 +206,15 @@ Keep it **short and direct**. This is a quick orientation, not a report.
 
 ### → Next up (REQUIRED)
 **[Step name]** — [description]
-Command: `[/command]`
+Command: `$ccgs-[command]`
 
 ### ~ Also available (OPTIONAL)
-- **[Step name]** — [description] → `/command`
-- **[Step name]** — [description] → `/command`
+- **[Step name]** — [description] → `$ccgs-[command]`
+- **[Step name]** — [description] → `$ccgs-[command]`
 
 ### Coming up after that
-- [Next required step name] (`/command`)
-- [Next required step name] (`/command`)
+- [Next required step name] (`$ccgs-[command]`)
+- [Next required step name] (`$ccgs-[command]`)
 
 ---
 Approaching **[next phase]** gate → run `$ccgs-gate-check` when ready.
@@ -218,7 +225,8 @@ Approaching **[next phase]** gate → run `$ccgs-gate-check` when ready.
 - `→` for the current required next step (only one — the first blocker)
 - `~` for optional steps available now
 - Show commands inline as backtick code
-- If a step has no command (e.g. "Implement Stories"), explain what to do instead of showing a slash command
+- Convert catalog commands from `/name` to `$ccgs-name` before showing them.
+- If a step has no command (e.g. "Implement Stories"), explain what to do instead of showing a skill name
 - For MANUAL steps, ask the user: "I can't tell if [step] is done — has it been completed?"
 
 Verdict: **COMPLETE** — next steps identified.

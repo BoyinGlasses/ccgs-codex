@@ -56,6 +56,9 @@ The upstream Claude `Notification` event and status line have no direct Codex
 equivalent. Codex project hooks cover session startup, tool validation,
 compaction, and subagent logging. See [assets/template/CODEX-PORT.md](assets/template/CODEX-PORT.md).
 
+After changing skills, agents, or hooks, run `python tests/smoke_port.py` to
+check the copied project and Codex hook bridge.
+
 ## Credits
 
 Created as a Codex adaptation of Claude Code Game Studios by Donchitos. The
