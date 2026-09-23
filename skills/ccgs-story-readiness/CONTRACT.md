@@ -30,6 +30,7 @@ None. This skill is strictly read-only and produces no file modifications under 
 - A verdict of READY, NEEDS WORK, BLOCKED or NOT ASSESSED is produced for every story file evaluated. `NOT ASSESSED` is not a synonym for `BLOCKED`: BLOCKED names a real, listable obstacle, while NOT ASSESSED means the story could not be evaluated at all. An empty scope yields `NOT ASSESSED — no stories in scope`, never a `Ready: 0 / Needs Work: 0 / Blocked: 0` summary over an empty list
 - Every non-READY verdict includes a specific gap list with fix instructions for each failing checklist item
 - Every BLOCKED verdict names the specific blocker (missing dependency story path, Proposed ADR ID, or unresolved design question marker)
+- A present but invalid `Handoff Class:` or vague `Verification Method:` produces NEEDS WORK with a concrete fix. Missing fields on older stories produce the advisory `classify at the dev-story approval checkpoint` without downgrading an otherwise READY verdict.
 - For `sprint` scope: a sprint-level escalation warning is prepended if any Must Have story is not READY
 - The skill offers to draft missing sections in conversation but never uses Write or Edit tools
 
@@ -45,6 +46,7 @@ None. This skill is strictly read-only and produces no file modifications under 
 - Never re-read the same ADR file multiple times in one run — cache ADR statuses after the first read
 - Never penalize a story for missing `Manifest Version:` if `control-manifest.md` does not exist
 - Never penalize a story for missing TR-ID if `tr-registry.yaml` does not exist
+- Never infer `Handoff Class: Technical` solely from `Type: Logic` or another implementation type.
 
 ## Downstream Skill Expects
 **Next skill:** /dev-story
@@ -54,6 +56,7 @@ It will rely on this skill's verdict as follows:
 - If verdict is NEEDS WORK or BLOCKED: `/dev-story` must not be run until the story is corrected and re-validated
 - `/dev-story` reads the same story fields this skill validates — a READY verdict is an implicit guarantee that those fields are present, parseable, and internally consistent:
   - `Type:` field is set to a valid story type
+  - `Handoff Class:` is valid and `Verification Method:` is concrete when present; if either is absent, `/dev-story` must propose and persist it at the story approval checkpoint before implementation
   - `## Acceptance Criteria` contains specific, testable checkbox items
   - `## Test Evidence` specifies a concrete evidence path
   - The governing ADR exists and has `Status: Accepted`

@@ -174,6 +174,45 @@ Verified automatically by `/skill-test static` — no fixture needed.
 
 ---
 
+### Case 6: Legacy story without handoff fields remains assessable
+
+**Fixture:**
+- A story satisfies all existing readiness checks.
+- It predates `Handoff Class` and `Verification Method`, so both fields are absent.
+
+**Input:** `$ccgs-story-readiness production/epics/core/story-legacy.md`
+
+**Expected behavior:**
+1. The skill reports `ADVISORY: classify at the dev-story approval checkpoint`.
+2. The existing readiness result stays READY; the advisory does not silently classify the story as Technical.
+3. The skill writes nothing.
+
+**Assertions:**
+- [ ] Missing legacy fields produce a visible advisory.
+- [ ] Missing legacy fields alone do not turn READY into NEEDS WORK or BLOCKED.
+- [ ] No Technical default is inferred from `Type: Logic`.
+
+---
+
+### Case 7: Invalid handoff class or vague method needs work
+
+**Fixture:**
+- A new story passes existing readiness checks.
+- It contains `Handoff Class: Unclear` and `Verification Method: test it`.
+
+**Input:** `$ccgs-story-readiness production/epics/core/story-new.md`
+
+**Expected behavior:**
+1. The skill reports the invalid class and unverifiable method as gaps.
+2. The verdict is NEEDS WORK until the story names a valid class and concrete verification action with expected evidence.
+
+**Assertions:**
+- [ ] Only Player-facing, Technical, or Mixed is accepted.
+- [ ] `test it` does not pass as a verification method.
+- [ ] The output states how to repair both fields.
+
+---
+
 ## Protocol Compliance
 
 - [ ] Does NOT use Write or Edit tools (read-only skill)

@@ -169,6 +169,29 @@ In `solo` mode: QL-STORY-READY is skipped with equivalent notes.
 
 ---
 
+### Case 6: Logic story with visible combat needs a play handoff
+
+**Fixture:**
+- An accepted combat requirement says the player sees a hit reaction when an enemy takes damage.
+- The implementation type is Logic because damage calculation is the main code change.
+- The QA steps include a build command and a playable encounter.
+
+**Input:** `$ccgs-create-stories combat`
+
+**Expected behavior:**
+1. The drafted story keeps `Type: Logic` for test and routing rules.
+2. It sets `Handoff Class: Player-facing` because a player-observable result must be played before acceptance.
+3. `Verification Method` names the build/test command, playable encounter steps, and an evidence path.
+4. Both fields appear in the draft before the user approves story creation.
+
+**Assertions:**
+- [ ] `Type: Logic` does not force `Handoff Class: Technical`.
+- [ ] The handoff class is Player-facing for the visible combat behavior.
+- [ ] The verification method is specific enough to execute and identifies where evidence will be kept.
+- [ ] Both fields are shown before the story is written.
+
+---
+
 ## Protocol Compliance
 
 - [ ] All context (EPIC, GDD, ADRs, manifest, TR registry) loaded before drafting stories

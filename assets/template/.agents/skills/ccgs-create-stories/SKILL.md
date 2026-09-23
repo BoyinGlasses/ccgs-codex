@@ -203,6 +203,16 @@ For each story, determine:
   - **Multiple ADRs apply**: List all governing ADRs in the story's `Governing ADRs:` field. Designate the one most directly controlling the implementation pattern as primary (first in the list). Others are listed as secondary references.
   - **No ADR applies at all**: Write `ADR: N/A — [brief reason, e.g. "pure data configuration, no architectural pattern required"]` in the story's ADR field. Do NOT leave the field blank — a blank ADR field means "not checked", not "not applicable".
 - **Story Type**: from Step 3 classification
+- **Handoff Class**: derive from the acceptance criteria, not Story Type. Use
+  `Player-facing` if the game maker must play to judge a player-observable
+  result, `Technical` if build/test evidence is enough, or `Mixed` if both a
+  play result and separate technical acceptance criteria must be checked. A
+  Logic story can be Player-facing (for example, visible combat behavior).
+- **Verification Method**: name the concrete build/test command or manual
+  check and the expected evidence path. For Player-facing or Mixed stories,
+  include playable setup/steps **and** the configured build/test command when
+  one exists in `project.yaml`. If a runner is unavailable, name that gap
+  instead of implying that it passed.
 - **Engine risk**: from the ADR's Knowledge Risk field
 
 ---
@@ -256,14 +266,20 @@ Before writing any files, present the full story list:
 Story 001: [title] — Logic — ADR-NNNN
   Covers: TR-[system]-001 ([1-line summary of requirement])
   Test required: tests/unit/[system]/[slug]_test.[ext]
+  Handoff: [Player-facing | Technical | Mixed]
+  Verification: [command or manual steps; expected evidence path]
 
 Story 002: [title] — Integration — ADR-MMMM
   Covers: TR-[system]-002, TR-[system]-003
   Test required: tests/integration/[system]/[slug]_test.[ext]
+  Handoff: [Player-facing | Technical | Mixed]
+  Verification: [command or manual steps; expected evidence path]
 
 Story 003: [title] — Visual/Feel — ADR-NNNN
   Covers: TR-[system]-004
   Evidence required: production/qa/evidence/[slug]-evidence.md
+  Handoff: [Player-facing | Mixed]
+  Verification: [play steps; expected evidence path]
 
 [N stories total: N Logic, N Integration, N Visual/Feel, N UI, N Config/Data]
 ```
@@ -313,6 +329,7 @@ For each story, write `production/epics/[epic-slug]/story-[NNN]-[slug].md`:
 > **Status**: Ready
 > **Layer**: [Foundation / Core / Feature / Presentation]
 > **Type**: [Logic | Integration | Visual/Feel | UI | Config/Data]
+> **Handoff Class**: [Player-facing | Technical | Mixed]
 > **Estimate**: [hours or t-shirt size — fill before sprint planning]
 > **Manifest Version**: [date from control-manifest.md header]
 > **Last Updated**: [set by $ccgs-dev-story when implementation begins]
@@ -386,6 +403,11 @@ change meaning. This is what the programmer reads instead of the ADR.]
 ---
 
 ## Test Evidence
+
+**Verification Method**: [concrete build/test command or manual check; expected evidence path; for Player-facing or Mixed also include play setup/steps and any configured build/test command]
+
+*The verification method and the game maker's play confirmation remain required
+handoff information even when automated test evidence is waived.*
 
 *Governed by `qa.level`: at `qa.level: minimal` the evidence below is **waived** (advisory, never "must exist and pass").*
 
