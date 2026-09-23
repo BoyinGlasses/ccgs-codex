@@ -7,6 +7,8 @@ complete starter template for Godot, Unity, or Unreal Engine projects.
 The project template and workflows are adapted from
 [Donchitos/Claude-Code-Game-Studios](https://github.com/Donchitos/Claude-Code-Game-Studios).
 Upstream project content is MIT licensed; see [LICENSE](LICENSE).
+This is an unofficial community port and is not affiliated with or endorsed by
+the upstream author.
 
 ## Install from GitHub
 
