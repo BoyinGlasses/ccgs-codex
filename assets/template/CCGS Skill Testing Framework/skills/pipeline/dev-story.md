@@ -135,6 +135,27 @@ checks.
 
 ---
 
+### Case 7: Approval snapshot detects same-day scope drift
+
+**Fixture:** A story is In Progress with `Story Approval: 2026-09-23`.
+The latest session-state approval extract excludes
+`src/networking/replication.gd`. The story text now includes that file,
+but the approval date is still 2026-09-23.
+
+**Input:** Resume `$ccgs-dev-story` for that story.
+
+**Expected behavior:** Compare current scope and acceptance criteria against
+the latest approval extract. The matching date alone does not prove the
+changed scope was approved. Pause before editing the newly included file and
+show the revised approval card.
+
+**Assertions:**
+- [ ] Same-day story edits do not bypass the checkpoint.
+- [ ] The latest approved scope and criteria are the comparison baseline.
+- [ ] No out-of-scope edit occurs before revised approval.
+
+---
+
 ## Protocol Compliance
 
 - [ ] Every new Ready story runs readiness before approval.

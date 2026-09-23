@@ -20,7 +20,13 @@ before the story is marked done, GDD and ADR deviations are explicitly
 documented rather than silently introduced, code review is prompted rather than
 forgotten, and the story file reflects actual completion status.
 
-**Output:** Updated story file (Status: Complete) + surfaced next story.
+The final status is a game-maker acceptance decision in every automation mode.
+The primary agent presents one evidence report and waits. A code-review
+verdict or automated test never accepts the story on the game maker's behalf.
+
+**Output:** Evidence handoff; after game-maker acceptance, updated story file
+(`Status: Complete`) and surfaced next story. A pending decision leaves the
+story In Progress.
 
 ---
 
@@ -32,7 +38,8 @@ See `.claude/docs/director-gates.md` for the full check pattern. Individual gate
 
 Every `Codex user-input tool` call follows `.claude/docs/automation-modes.md`
 (collaborative asks always · guided major-only · autonomous logs and proceeds;
-`automation_always_ask` categories always prompt).
+`automation_always_ask` categories always prompt), except the final story
+acceptance checkpoint, which always waits for the game maker.
 
 **Workflow tier**: resolved per the story's system (per
 `.claude/docs/workflow-modes.md`) — **the GDD filename stem** of the story's
@@ -55,6 +62,9 @@ Requirement check (Phase 3), the >50%-untested traceability escalation, and the
 Phase 4b QA gate entirely; the acceptance-criteria verification still runs. At
 `standard`, the story's own type requires evidence; at `full`, every type does.
 `testing.strict` then decides whether present-but-failing evidence blocks.
+These waivers do not waive the story handoff: Player-facing and Mixed stories
+still require game-maker play confirmation, and every class still needs
+explicit game-maker acceptance.
 (`rigor: minimal` sets both; `qa.level: minimal` on its own leaves the workflow
 tier where it was.)
 
@@ -71,6 +81,10 @@ read that file directly.
    - Options: list the in-progress story file names.
 4. If no story can be found, ask the user to provide the path.
 
+If the resolved story already has `Status: Complete` and an
+`Accepted By Game Maker` completion note, report that acceptance and stop;
+do not ask the checkpoint again or duplicate Completion Notes.
+
 ---
 
 ## Phase 2: Read the Story
@@ -84,6 +98,12 @@ Read the full story file. Extract and hold in context:
 - **Acceptance Criteria** — the complete list (every checkbox item)
 - **Implementation files** — files listed under "files to create/modify"
 - **Story Type** — the `Type:` field from the story header (Logic / Integration / Visual/Feel / UI / Config/Data)
+- **Handoff Class** — `Player-facing`, `Technical`, or `Mixed` from the
+  approved story; if missing, report NOT ASSESSED and return to the story
+  approval checkpoint rather than silently treating it as Technical.
+- **Story Approval** and **Verification Method** — read the approval date and
+  prescribed build/test, evidence path, and play steps. If Story Approval is
+  absent, do not close the story.
 - **Engine notes** — any engine-specific constraints noted
 - **Definition of Done** — if present, the story-level DoD
 - **Estimated vs actual scope** — if an estimate was noted
@@ -122,23 +142,30 @@ three methods:
   that should be in localization files.
 - **Dependency check**: if a criterion says "depends on X", check that X exists.
 
-### Manual verification with confirmation (use `Codex user-input tool`)
+### Manual verification for the final checkpoint
 
 - Criteria about subjective qualities ("feels responsive", "animations play correctly")
 - Criteria about gameplay behaviour ("player takes damage when...", "enemy responds to...")
 - Performance criteria ("completes within Xms") — ask if profiled or accept as assumed
 
-Batch up to 4 manual verification questions into a single `Codex user-input tool` call:
+Collect manual checks for the final evidence report. When the game maker must
+confirm one or more criteria, include them in the single final acceptance
+question; do not open separate criterion-by-criterion prompts before it.
+Where a manual check can be performed by the primary agent, record the
+observation and evidence path directly.
 
 ```
-question: "Does [criterion]?"
-options: "Yes — passes", "No — fails", "Not tested yet"
+criterion: [exact story criterion]
+result: [observed + evidence path | awaiting game-maker play | NOT VERIFIED — reason]
 ```
 
 ### Unverifiable (flag without blocking)
 
 - Criteria that require a full game build to test (end-to-end gameplay scenarios)
-- Mark as: `DEFERRED — requires playtest session`
+- Mark as: `DEFERRED — requires playtest session` until the game maker confirms
+  playing. For Player-facing and Mixed stories, this deferral prevents a
+  COMPLETE verdict and keeps the story In Progress even at
+  `qa.level: minimal` or advisory `testing.strict.visual: false`.
 
 ### Test-Criterion Traceability
 
@@ -152,8 +179,9 @@ For each acceptance criterion in the story:
    - **Unit test**: check `tests/unit/` for a test file or function name that
      matches the criterion's subject (use `Glob` and `Grep`)
    - **Integration test**: check `tests/integration/` similarly
-   - **Manual confirmation**: if the criterion was verified via `Codex user-input tool`
-     above with a "Yes — passes" answer, count that as a manual test
+  - **Manual confirmation**: if the game maker confirms the criterion at the
+    final acceptance checkpoint after playing, count that as a manual test.
+    Before that answer, mark it PENDING rather than COVERED.
    - **Retained screenshot**: if the criterion names something on screen and a
      retained image under `production/qa/evidence/[story-slug]/` shows it (the
      `Run result: OBSERVED` from `$ccgs-dev-story` Phase 6 step 4), count that as
@@ -185,6 +213,21 @@ For each acceptance criterion in the story:
 
 4. For any ADVISORY untested criteria, add to the Completion Notes in Phase 7:
    `"Untested criteria: [AC-N list]. Recommend adding tests in a follow-up story."`
+
+### Story handoff evidence — every QA level
+
+Read the approved `Verification Method` and the actual command/run result
+from `$ccgs-dev-story` or session state. For Technical and Mixed stories,
+require an inspectable build or test result for each technical acceptance
+criterion: executed PASS counts, executed FAIL is BLOCKING, and an absent
+runner/result is `NOT VERIFIED — <reason>` and yields NOT ASSESSED.
+For Player-facing and Mixed stories, also require game-maker play
+confirmation; until then mark the play criterion DEFERRED and keep the
+story In Progress. A retained screenshot can cover appearance, not play.
+These handoff requirements apply even when `qa.level: minimal` waives
+type-specific automated test files or `testing.strict.visual: false`
+makes screenshot evidence advisory. Any explicit acceptance of a missing
+or failed check uses the named-gap override at the final checkpoint.
 
 ### Test Evidence Requirement
 
@@ -244,22 +287,13 @@ game the rendered result is the product; set `testing.strict.visual` or
 > `.agents/skills/ccgs-smoke-check/SKILL.md` § "Resolve the gate enforcement level".
 > The divergence is intentional; do not "fix" either side to match the other.
 
-> **This phase checks that evidence EXISTS. It does not run anything.** The
-> `Default Gate Level` table above, and `.claude/docs/coding-standards.md`, both
-> say a Logic story's test "must exist **and pass**". The checks below establish
-> only the first half — every one of them is a `Glob` or a `Grep`. A unit test
-> that exists and fails, or that contains no assertions, satisfies them.
->
-> Say which half you verified when you report. "Test file present at `<path>`"
-> is the honest claim; "tests pass" is not one this phase can make. Pass/fail is
-> established by `$ccgs-gate-check` (runs the suite at a phase gate) and
-> `$ccgs-smoke-check` (runs it before QA hand-off), both of which do execute.
->
-> Unlike `$ccgs-regression-suite` and `$ccgs-launch-checklist`, which stop at existence
-> because their `allowed-tools` has no `Bash`, this skill HAS `Bash` — the limit
-> here is the instruction, not the grant. Running the story's own test before
-> closing it is a live option; it is not enabled because it needs a configured
-> runner and a decision about what a missing runner should mean.
+> **The type-specific checks below establish file existence, not a passing
+> test.** Use the executed result from `$ccgs-dev-story` for the final
+> handoff. If it is absent or stale and the approved Verification Method
+> names an available test command, run that command now. Record the
+> command, output, and exit status. If no runner is configured or available,
+> report `NOT VERIFIED — <reason>`. File existence alone never becomes
+> `tests pass`. Later phase gates may run broader suites again.
 
 **For Logic stories**: first read the story's **Test Evidence** section to extract the
 exact required file path. Use `Glob` to check that exact path. If the exact path is not
@@ -400,22 +434,25 @@ Skip this phase for Config/Data stories (no code tests required).
 
 **Review mode check** — apply before spawning LP-CODE-REVIEW:
 - `solo` → skip. Note: "LP-CODE-REVIEW skipped — Solo mode." Proceed to Phase 6 (completion report).
-- `lean` → use `Codex user-input tool` before proceeding:
-  - Prompt: "Code review is skipped in lean mode. Did you run `$ccgs-code-review` on the implemented files?"
-  - Options:
-    - `Yes — $ccgs-code-review passed or was approved with suggestions`
-    - `No — skipping code review for this story`
-    - `No — I'll run $ccgs-code-review before the sprint close-out`
-  - Record the answer in the completion notes (Phase 7). All three options proceed to Phase 6.
+- `lean` → report `LP-CODE-REVIEW skipped — Lean mode` and include the
+  `$ccgs-code-review` result if it ran. If its outcome needs game-maker
+  judgment, fold that into the final acceptance checkpoint instead of
+  opening a separate routine prompt. An unresolved architecture decision
+  still pauses before the related change.
 - `full` → spawn as normal.
 
 Spawn `lead-programmer` via `Agent` using gate **LP-CODE-REVIEW** (`.claude/docs/director-gates/lp-code-review.md`).
 
 Pass: implementation file paths, story file path, relevant GDD section, governing ADR.
 
-Present the verdict to the user. If CONCERNS, surface them via `Codex user-input tool`:
-- Options: `Revise flagged issues` / `Accept and proceed` / `Discuss further`
-If REJECT, do not proceed to Phase 6 verdict until the issues are resolved.
+Include the verdict and verified findings in the final evidence report. For
+CONCERNS, the primary agent fixes in-scope issues and reruns affected checks,
+or names an unresolved advisory limitation in the final checkpoint. Ask
+earlier only if the finding requires a changed gameplay, architecture,
+engine, scope, or acceptance-criteria decision. If REJECT, use a BLOCKED
+Phase 6 verdict until the issues are resolved. An explicit game-maker
+override follows Phase 7's named-gap rule and records the rejected
+finding; it never relabels the review as approved.
 
 If the story has no implementation files yet (verdict is being run before coding is done), skip this phase and note: "LP-CODE-REVIEW skipped — no implementation files found. Run after implementation is complete."
 
@@ -450,15 +487,42 @@ Before updating any files, present the full report:
 
 ### Deviations
 [NONE] OR:
-- BLOCKING: [description] — [GDD/ADR reference]
+- BLOCKING: [current GDD/ADR value or rule] versus [observed implementation
+  value or behavior] — [GDD/ADR reference and consequence]
 - ADVISORY: [description] — user accepted / flagged for tech debt
 
 ### Scope
 [All changes within stated scope] OR:
 - Extra files touched: [list] — [note whether valid or scope creep]
 
+### Story Handoff
+**Changes**: [changed files and player-visible result, or no player-visible result]
+**Handoff Class**: [Player-facing | Technical | Mixed]
+| Acceptance criterion | Evidence path or command and result | Status |
+| --- | --- | --- |
+| [criterion] | [specific observation/test output or NOT VERIFIED — reason] | [PASS | FAIL | DEFERRED] |
+**Play steps**: [short setup and actions for Player-facing/Mixed | N/A — Technical]
+**Game-maker play**: [Confirmed after playing | Pending | N/A — Technical]
+**Review**: [verdict and unresolved issues; in full mode include `Gate: LP-CODE-REVIEW — [result]`]
+**Limitations**: [specific gaps or None]
+**Decision requested**: [Accept | Request fixes | Wait for play/evidence | Explicitly accept named gap]
+
 ### Verdict: COMPLETE / COMPLETE WITH NOTES / NOT ASSESSED / BLOCKED
 ```
+
+Present this full report once, after internal review and before any
+completion-status write. Map every criterion to executed evidence or a named
+gap; a test-file path without an actual run is `NOT VERIFIED — test not run`,
+never PASS. Use the `Verification Method` from the approved story. Technical
+stories can be accepted from inspectable build/test evidence with Play steps
+N/A. Player-facing and Mixed stories need the game maker to confirm playing
+the build or scene; Mixed also needs independent technical evidence for its
+technical criteria. A screenshot verifies appearance, not player experience.
+If a build/run was unavailable, report `NOT VERIFIED — <reason>`; the game
+maker may explicitly accept that named gap, but the report must not label it
+PASS. Keep prior criteria, deviation, traceability, and scope details in this
+one report. Batch any manual criterion confirmation and lean review outcome
+into the final question unless they require a changed product decision.
 
 **Verdict definitions:**
 - **COMPLETE**: all criteria pass, no blocking deviations
@@ -466,6 +530,14 @@ Before updating any files, present the full report:
 - **NOT ASSESSED**: one or more acceptance criteria could not be evaluated at
   all — name which, and why
 - **BLOCKED**: failing criteria or blocking deviations must be resolved first
+
+For Player-facing and Mixed, pending game-maker play is a deferred required
+criterion and cannot receive COMPLETE or COMPLETE WITH NOTES. Keep the story
+In Progress and ask the game maker to play using the listed steps. For any
+class, a failed or unrun required verification is not PASS; retain the
+corresponding BLOCKED or NOT ASSESSED verdict unless the game maker explicitly
+accepts the named gap, which is recorded as a deviation. Such acceptance
+never rewrites the evidence result as passing.
 
 **`NOT ASSESSED` — the story nobody could verify.** Rank: it **outranks COMPLETE
 and COMPLETE WITH NOTES** (a review that could not evaluate a criterion has not
@@ -486,10 +558,10 @@ Emit it when any of:
 - An acceptance criterion **cannot be evaluated at all** — it names no observable
   outcome, so no evidence could settle it either way.
   > **Not the same as Phase 3's `DEFERRED`.** A criterion that is evaluable but
-  > needs a playtest is `DEFERRED — requires playtest session`, it does **not**
-  > block, and Phase 3 keeps ownership of it. This trigger is for a criterion no
-  > session could ever settle as written. If Phase 3 already marked it DEFERRED,
-  > that classification stands and this trigger does not fire.
+  > needs a playtest is `DEFERRED — requires playtest session`. For a
+  > Player-facing or Mixed handoff, that deferral prevents completion until
+  > the game maker plays. This NOT ASSESSED trigger is for a criterion no
+  > session could ever settle as written.
 - The **test evidence is present but unreadable or unclassifiable** — corrupt,
   empty, or of a type that cannot be determined.
   > **Absent evidence is Phase 3's, not this trigger's.** Phase 3 resolves a
@@ -509,51 +581,54 @@ Emit it when any of:
 - A **deviation's severity cannot be determined** because the GDD or ADR it
   would be judged against is missing.
 
-A `NOT ASSESSED` verdict takes the same Phase 7 path as BLOCKED: do not
-automatically proceed, list what could not be checked and what would make it
-checkable. Closing anyway remains the user's explicit call, and stays gated by
-Phase 7's `scope_changes` always-ask rule.
+A `NOT ASSESSED` verdict lists what could not be checked and what would
+make it checkable. The final checkpoint still offers an explicit gap
+acceptance; never proceed automatically.
 
-If the verdict is **BLOCKED**: do not *automatically* proceed to Phase 7. List
-what must be fixed and offer to help fix the blocking items. This is the
-default path, not an absolute stop — the user may still explicitly ask to
-close the story anyway despite the blockers. That request is what routes to
-Phase 7's menu below, and Phase 7's own `scope_changes` always-ask rule is
-exactly what stands between that request and a silent close in autonomous
-mode. Do not treat "do not automatically proceed" as "Phase 7 is now
-unreachable" — it is reachable, on request, and gated when reached.
+If the verdict is **BLOCKED**: list what must be fixed. The game maker may
+request a fix or explicitly accept the named failure at the final checkpoint.
+The primary agent never closes it automatically.
 
 ---
 
 ## Phase 7: Update Story Status
 
-**Reached one of two ways**: normally, immediately after a COMPLETE or
-COMPLETE-WITH-NOTES verdict in Phase 6; or, after a BLOCKED **or NOT ASSESSED**
-verdict, only if the user explicitly asks to close the story despite the
-blockers (Phase 6 does not advance here on its own in either case).
+Reach this phase only after presenting the Phase 6 report and receiving an
+explicit game-maker decision. A COMPLETE or COMPLETE-WITH-NOTES verdict is
+eligible for acceptance; BLOCKED or NOT ASSESSED needs an explicit named-gap
+override. Pending play is never an eligible override until the game maker
+confirms playing.
 
-**Automation note**: This is the story-completion gate. Closing a story whose
-verdict is BLOCKED (failing acceptance criteria) **or NOT ASSESSED** (criteria
-nobody could evaluate) — the "Accept deviations as-is and close anyway" option —
-is a `scope_changes` decision. Call
-`is_always_ask_category scope_changes`; when it returns 0 (the default), this
-gate prompts via `Codex user-input tool` **regardless of `modes.automation`** —
-autonomous mode must NOT silently close a BLOCKED story, even when the user's
-own request is what got you here. For a COMPLETE or COMPLETE-WITH-NOTES
-verdict, autonomous mode may pick "Close the story (Recommended)" and record
-it via `log_decision`.
+**Automation note**: This is the final human checkpoint in every mode,
+including autonomous. The game maker must explicitly accept the Phase 6
+evidence report before `Status: Complete` is written. An earlier story
+approval, a review verdict, or silence is not acceptance. Do not use
+`log_decision` to choose acceptance on the game maker's behalf.
 
-Use `Codex user-input tool` before writing anything:
-- Prompt: "Verification complete. How do you want to proceed?"
+Use one `Codex user-input tool` call after presenting the report:
+- Prompt: "Please review the story evidence and, for Player-facing or Mixed
+  stories, play the build or scene using the steps above. What is your decision?"
 - Options:
-  - `Close the story — update file, mark Complete, log notes (Recommended)`
-  - `Close and log advisory deviations as tech debt in docs/tech-debt-register.md`
-  - `There are issues I want to fix first — don't close yet`
-  - `Accept deviations as-is and close anyway`
+  - `Accept this story — I have played it if required`
+  - `Request fixes — keep this story In Progress`
+  - `Wait for play or missing evidence — keep this story In Progress`
+  - `Explicitly accept the named verification gap or deviation`
 
-If "Close", "Close and log tech debt", or "Accept deviations": edit the story file.
-If "Close and log tech debt": after updating the story file, also append the advisory deviations to `docs/tech-debt-register.md` (create the file if it does not exist).
-If "Fix first": stop here and list what the user flagged. Do not write any files.
+Only the first option with the required play confirmation, or an explicit
+gap/deviation acceptance that also confirms required play, closes the story.
+For a technical story, no play confirmation is needed. A request for fixes
+or wait leaves `Status: In Progress`; append `Pending acceptance:
+[specific fix, play step, or evidence gap]` to
+`production/session-state/active.md`, preserving the code and tests.
+The primary agent continues in-scope fixes in this story and returns to this
+checkpoint with updated evidence. Do not ask a separate file-write question
+after the game maker accepts; the acceptance authorizes the status and
+completion-note updates.
+
+Closing with a BLOCKED or NOT ASSESSED verdict remains an explicit override:
+name each failing or unassessed criterion and the risk in the report, require
+the game maker to select explicit gap acceptance, and record the override in
+`## Completion Notes`. Never turn `NOT VERIFIED` into PASS.
 
 1. Update the status field: `Status: Complete`
 2. Update the `Last Updated:` field in the story header to today's date (format: `YYYY-MM-DD`). If the field does not exist, add it after the `Status:` line.
@@ -564,11 +639,15 @@ If "Fix first": stop here and list what the user flagged. Do not write any files
 **Completed**: [date]
 **Criteria**: [X/Y passing] ([any deferred items listed])
 **Deviations**: [None] or [list of advisory deviations]
+**Blocking Deviations Explicitly Accepted**: [original GDD/ADR rule, observed value, risk, and game-maker decision | None]
 **Test Evidence**: [Logic: test file at path | Visual/Feel: evidence doc at path | None required (Config/Data)]
 **Code Review**: [Pending / Complete / Skipped]
+**Accepted By Game Maker**: [date and decision]
+**Game-maker Play**: [Confirmed after playing | N/A — Technical]
+**Verification Gaps Accepted**: [named gaps with original NOT VERIFIED or FAIL result | None]
 ```
 
-4. If the user chose "Close and log tech debt": append each advisory deviation to `docs/tech-debt-register.md` in this format:
+4. If the user explicitly requested tech-debt logging with acceptance: append each advisory deviation to `docs/tech-debt-register.md` in this format:
    ```
    - **[date]** ([story title]): [deviation description] — tracked from [story file path]
    ```
@@ -598,6 +677,9 @@ After updating the story file, silently append to
     ## Session Extract — $ccgs-story-done [date]
     - Verdict: [COMPLETE / COMPLETE WITH NOTES / NOT ASSESSED / BLOCKED]
     - Story: [story file path] — [story title]
+    - Accepted by game maker: [date and decision]
+    - Game-maker play: [confirmed | N/A — Technical]
+    - Verification gaps accepted: [named gaps or None]
     - Tech debt logged: [N items, or "None"]
     - Next recommended: [next ready story title and path, or "None identified"]
 
@@ -608,7 +690,7 @@ Confirm in conversation: "Session state updated."
 
 ## Phase 8: Surface the Next Story
 
-After completion, help the developer keep momentum:
+Only after accepted completion, help the developer keep momentum:
 
 1. Read the current sprint plan from `production/sprints/`.
 2. Find stories that are:
@@ -654,14 +736,16 @@ If no more stories are ready but Must Have stories are still In Progress (not Co
 
 ## Collaborative Protocol
 
-**In `collaborative` mode (the default).** For `guided` and `autonomous` modes,
-see `.claude/docs/automation-modes.md` — the rules below describe collaborative
-behavior. The BLOCKED-override close (Phase 7) always prompts regardless of mode
-(it's a `scope_changes` always-ask decision).
+**Story acceptance overrides the automation mode.** Every story requires
+explicit game-maker acceptance before closing. Other non-story decisions
+continue to follow `.claude/docs/automation-modes.md`.
 
-- **Never mark a story complete without user approval** — Phase 7 requires an
-  explicit "yes" before any file is edited.
-- **Never auto-fix failing criteria** — report them and ask what to do.
+- **Never mark a story complete without game-maker acceptance** — Phase 7
+  requires an explicit decision on the evidence report before status edits.
+- **Fix requests remain in the same story** — after the game maker requests
+  fixes, the primary agent resolves in-scope failures, reruns affected checks,
+  and returns with updated evidence. A scope change needs revised story
+  approval before the related edit.
 - **Deviations are facts, not judgments** — present them neutrally; the user
   decides if they are acceptable.
 - **BLOCKED and NOT ASSESSED verdicts are advisory** — the user can override and
@@ -669,8 +753,8 @@ behavior. The BLOCKED-override close (Phase 7) always prompts regardless of mode
   ASSESSED, the documented risk is that the criterion was never evaluated, not
   that it failed — record which criteria those were, so the gap is recoverable
   later rather than closed over.
-- Use `Codex user-input tool` for the code review prompt and for batching manual
-  criteria confirmations.
+- Batch routine manual criteria and the lean review outcome into the single
+  final acceptance question; do not open a separate routine prompt for each.
 
 ---
 

@@ -51,8 +51,9 @@ owns the story decision. Specialists answer bounded questions when useful.
   only after the game maker approves the revised story and the pending
   decision is cleared.
 - An approved In Progress story with no pending decision resumes without
-  repeating approval. In Progress without an approval record needs the card
-  before further implementation edits.
+  repeating approval only when the story's scope and criteria match the
+  latest approval extract in session state. Drift or In Progress without an
+  approval record needs the card before further implementation edits.
 - Run relevant parse/build/test and run-observe checks. A partial specialist
   or implementation result is INCOMPLETE, not a successful handoff.
 - Continue through `$ccgs-code-review` and `$ccgs-story-done` without

@@ -67,11 +67,13 @@ are not required (`minimal`), the Phase 5 `testing.strict` gate is a no-op.
 
 **If no argument**: check `production/session-state/active.md` for the active
 story. If found, confirm: "Continuing work on [story title] — is that correct?"
-Read the story's `Status:` and `**Story Approval**:` fields and any pending
-decision in session state. An In Progress story with recorded approval and no
-pending decision resumes without repeating the story approval checkpoint. If
-approval is missing or a scope decision is pending, do not infer consent from
-In Progress status; show the approval card or pending decision before edits.
+Read the story's `Status:` and `**Story Approval**:` fields and the latest
+approval extract and pending decision in session state. An In Progress story
+with recorded approval, matching scope and criteria, and no pending decision
+resumes without repeating the story approval checkpoint. If approval is
+missing, scope or criteria drifted, or a decision is pending, do not infer
+consent from In Progress status; show the approval card or pending decision
+before edits.
 If not found, ask: "Which story are we implementing?" Glob
 `production/epics/**/*.md` and list stories with Status: Ready.
 
@@ -174,7 +176,8 @@ If **[A]**: first check the ADR's size — `Bash: wc -c "docs/architecture/[adr-
   Escalate to a bounded `Read(offset, limit)` on one section only if a scanned
   section cross-references material outside itself.
 
-Then update the story's `ADR Version` to the current date so the next run is clean.
+Hold the new `ADR Version` value for the approval card. Write it to the
+story only after story approval, before implementation.
 If **[B]**: proceed on the summary; record it in the Phase 6 "Deviations" summary.
 If **[C]**: stop before implementation.
 
@@ -193,8 +196,14 @@ If they differ, use `Codex user-input tool` before proceeding:
   - `[B] Implement with old rules — I accept the risk of non-compliance`
   - `[C] Stop here — I want to review the manifest diff first`
 
-If [A]: edit the story file's `Manifest Version:` field to the current manifest date before implementation. Then read the manifest carefully for new rules.
-If [B]: edit the story file's `Manifest Version:` field to the current manifest date AND add a `Manifest-Note: Proceeded with old manifest rules on [date] — non-compliance risk accepted.` line to the story header. Read the manifest for new rules anyway. Note the decision in the Phase 6 summary under "Deviations". `$ccgs-story-done` will include the Manifest-Note in its deviations section without re-checking staleness.
+If [A]: hold the new `Manifest Version:` value for the approval card, then
+read the manifest carefully for new rules. Write the value to the story only
+after story approval, before implementation.
+If [B]: hold the new `Manifest Version:` and a
+`Manifest-Note: Proceeded with old manifest rules on [date] — non-compliance
+risk accepted.` for the approval card. Read the manifest for new rules
+anyway. Write both only after story approval. Note the decision in the
+Phase 6 summary under "Deviations"; `$ccgs-story-done` includes the note.
 If [C]: stop before implementation. Let the user review and re-run `$ccgs-dev-story`.
 
 ### Dependency validation
@@ -209,9 +218,11 @@ After extracting the **Dependencies** list from the story file, validate each:
      - Options:
        - `[A] Proceed anyway — I accept the dependency risk`
        - `[B] Stop — I'll complete the dependency first`
-       - `[C] The dependency is done but status wasn't updated — mark it Complete and continue`
+       - `[C] The dependency appears done but status was not updated — verify it through $ccgs-story-done`
    - If [B]: set story status to **BLOCKED** in session state and stop before implementation.
-   - If [C]: ask "May I update [dependency path] Status to Complete?" before continuing.
+   - If [C]: run `$ccgs-story-done [dependency path]` and obtain the game
+     maker's acceptance for that dependency. Do not set its Status directly.
+     Return to this story only when the dependency is accepted as Complete.
    - If [A]: note in Phase 6 summary under "Deviations": "Implemented with incomplete dependency: [dependency title] — [status]."
 
 If a dependency file cannot be found: warn "Dependency story not found: [path]. Verify the path or create the story file."
@@ -254,11 +265,16 @@ Decision: [Approve this story | Revise the story]
 
 This is a human checkpoint in every automation mode. Wait for an explicit
 `Approve this story`; no response or `Revise the story` stops implementation.
-On approval, write the approved handoff fields if absent, then write
+On approval, write the approved handoff fields if absent, plus any approved
+ADR or manifest version update held above, then write
 `**Story Approval**: YYYY-MM-DD` near the story header. Append the story path,
-approval date, handoff class, verification method, and `Pending decision: None`
-to `production/session-state/active.md`. If the file does not exist, create
-it. An approved In Progress resume with no pending decision skips this card.
+approval date, exact approved scope/Out of Scope text, all acceptance criteria,
+handoff class, verification method, and `Pending decision: None` to
+`production/session-state/active.md`. If the file does not exist, create
+it. On resume, compare the story's current scope and criteria against the
+latest approval extract. Any drift needs the revised approval card before
+edits, even if the approval date is still today. An approved In Progress
+resume with no pending decision and no drift skips this card.
 The approval covers routine source, test, and evidence-file edits within scope;
 do not ask again for each new file.
 
@@ -418,8 +434,9 @@ choice, or an engine change, stop before making that change. Append
 `Pending decision: [story path, affected file or decision, proposed scope]`
 to `production/session-state/active.md`; keep completed in-scope work.
 Present the revised story approval card and wait. On approval, update the
-story's scope and `Story Approval` record, clear the pending decision in
-session state, then resume. A later session with a pending decision must not
+story's scope and `Story Approval` record, append a fresh approval extract
+with the revised scope and criteria, clear the pending decision in session
+state, then resume. A later session with a pending decision must not
 continue implementation until that decision is resolved.
 
 ### Config/Data stories (no agent needed)

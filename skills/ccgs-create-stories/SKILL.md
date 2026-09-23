@@ -413,7 +413,7 @@ handoff information even when automated test evidence is waived.*
 
 **Story Type**: [type]
 **Required evidence**:
-- Logic: `tests/unit/[system]/[story-slug]_test.[ext]` — must exist and pass (`$ccgs-story-done` checks that it EXISTS; pass/fail is established by `$ccgs-gate-check` and `$ccgs-smoke-check`, both later)
+- Logic: `tests/unit/[system]/[story-slug]_test.[ext]` — must exist and pass (`$ccgs-dev-story` runs the configured test; `$ccgs-story-done` checks the actual result as well as file existence)
 - Integration: `tests/integration/[system]/[story-slug]_test.[ext]` OR playtest doc
 - Visual/Feel: `production/qa/evidence/[story-slug]-evidence.md` + sign-off
 - UI: `production/qa/evidence/[story-slug]-evidence.md` or interaction test
