@@ -2,11 +2,11 @@
 
 ## Skill Summary
 
-`/code-review` performs an architectural code review of source files in `src/`,
-checking coding standards from `CLAUDE.md` (doc comments on public APIs,
-dependency injection over singletons, data-driven values, testability). Findings
-are advisory. No director gates are invoked. No code edits are made. Verdicts:
-APPROVED, CONCERNS, or NEEDS CHANGES.
+`$ccgs-code-review` reviews source files against the project's coding
+standards, governing ADRs, architecture, testability, and game concerns.
+It writes no files. The primary agent owns the verdict and may consult a
+specialist for a bounded finding. An approved review returns to the
+story loop without a routine game-maker prompt.
 
 ---
 
@@ -14,9 +14,10 @@ APPROVED, CONCERNS, or NEEDS CHANGES.
 
 Verified automatically by `/skill-test static` — no fixture needed.
 
-- [ ] Has required frontmatter fields: `name`, `description`, `argument-hint`, `user-invocable`, `allowed-tools`
+- [ ] Has Codex skill frontmatter fields: `name`, `description`
 - [ ] Has ≥2 phase headings
-- [ ] Contains verdict keywords: APPROVED, CONCERNS, NEEDS CHANGES
+- [ ] Contains verdict keywords: APPROVED, APPROVED WITH SUGGESTIONS,
+      CHANGES REQUIRED, NOT ASSESSED
 - [ ] Does NOT require "May I write" language (read-only; findings are advisory output)
 - [ ] Has a next-step handoff (what to do with findings)
 
@@ -24,7 +25,9 @@ Verified automatically by `/skill-test static` — no fixture needed.
 
 ## Director Gate Checks
 
-None. Code review is a read-only advisory skill; no gates are invoked.
+The skill itself has no mandatory director gate. Bounded specialist review
+may run for an applicable engine or QA concern; an unresolved architecture
+decision pauses for the game maker.
 
 ---
 
@@ -46,12 +49,11 @@ None. Code review is a read-only advisory skill; no gates are invoked.
 1. Skill reads the source file
 2. Skill checks all coding standards: doc comments, DI, data-driven, ADR status
 3. All checks pass
-4. Skill outputs findings summary with all checks PASS
+4. Skill outputs the overall standards score and an APPROVED verdict
 5. Verdict is APPROVED
 
 **Assertions:**
-- [ ] Each coding standard check is listed in the output
-- [ ] All checks show PASS when standards are met
+- [ ] The standards score reflects the clean fixture
 - [ ] Skill reads referenced ADR to confirm its status
 - [ ] Verdict is APPROVED
 - [ ] No edits are made to any file
@@ -72,15 +74,14 @@ None. Code review is a read-only advisory skill; no gates are invoked.
 1. Skill reads the source file
 2. Skill detects: 2 missing doc comments on public methods
 3. Skill detects: singleton usage at specific lines (e.g., line 42, line 87)
-4. Findings list the exact method names and line numbers
-5. Verdict is NEEDS CHANGES
+4. Findings identify the issue types with supporting locations
+5. Verdict is CHANGES REQUIRED
 
 **Assertions:**
-- [ ] Missing doc comments are listed with method names
+- [ ] Missing doc comments are identified
 - [ ] Singleton usage is flagged with file and line number
-- [ ] Verdict is NEEDS CHANGES when BLOCKING-level standard violations exist
+- [ ] Verdict is CHANGES REQUIRED when blocking standard violations exist
 - [ ] Skill does not edit the file — findings are for the developer to act on
-- [ ] Output suggests replacing singleton with dependency injection
 
 ---
 
@@ -98,12 +99,14 @@ None. Code review is a read-only advisory skill; no gates are invoked.
 2. Skill reads referenced ADR — finds `Status: Proposed`
 3. Skill flags this as ARCHITECTURE RISK (code is implementing an unaccepted ADR)
 4. Other coding standard checks pass
-5. Verdict is CONCERNS (risk flag is advisory, not a hard NEEDS CHANGES)
+5. Verdict is CHANGES REQUIRED because the architecture decision is
+   unresolved; the primary agent pauses for the game maker.
 
 **Assertions:**
 - [ ] Skill reads referenced ADR file to check its status
 - [ ] ARCHITECTURE RISK is flagged when ADR status is Proposed
-- [ ] Verdict is CONCERNS (not NEEDS CHANGES) for ADR risk — advisory severity
+- [ ] Verdict is CHANGES REQUIRED for an unresolved Proposed ADR
+- [ ] The active story pauses for the game maker's architecture decision
 - [ ] Output recommends resolving the ADR before the code goes to production
 
 ---
@@ -120,14 +123,13 @@ None. Code review is a read-only advisory skill; no gates are invoked.
 1. Skill attempts to read files in `src/networking/`
 2. Directory or files not found
 3. Skill outputs an error: "No source files found at `src/networking/`"
-4. Skill suggests checking `src/` for valid directories
-5. No verdict is emitted (nothing was reviewed)
+4. Verdict is `NOT ASSESSED — NO DATA` (nothing was reviewed)
 
 **Assertions:**
 - [ ] Skill does not crash when path does not exist
 - [ ] Output names the attempted path in the error message
-- [ ] Output suggests checking `src/` for valid file paths
-- [ ] No verdict is emitted when there is nothing to review
+- [ ] No APPROVED or clean verdict is emitted when there is nothing to review
+- [ ] The output reports NOT ASSESSED and names the missing path
 
 ---
 
@@ -142,25 +144,47 @@ None. Code review is a read-only advisory skill; no gates are invoked.
 **Expected behavior:**
 1. Skill reads and reviews the source file
 2. No director gate is invoked (code review findings are advisory)
-3. Skill presents findings with the CONCERNS verdict
-4. Output notes: "Consider requesting a Lead Programmer review for architecture concerns"
-5. Skill does not invoke any agent automatically
+3. Skill presents findings with APPROVED WITH SUGGESTIONS.
+4. If architecture expertise is needed, it may consult a specialist on a
+   named bounded question and verifies the finding before reporting it.
+5. No routine game-maker menu is opened for the advisory finding.
 
 **Assertions:**
-- [ ] No director gate is invoked in any review mode
-- [ ] LP consultation is suggested (not mandated) in the output
+- [ ] No mandatory director gate is invoked by this skill
+- [ ] A specialist, if used, gets a bounded question
 - [ ] No code edits are made
-- [ ] Verdict is CONCERNS for advisory-level findings
+- [ ] Verdict is APPROVED WITH SUGGESTIONS for advisory-level findings
+
+---
+
+### Case 6: Approved review returns to the primary agent
+
+**Fixture:** A code story has a passing review with no unresolved architecture
+decision. The primary agent is carrying an approved story through to the
+final acceptance checkpoint.
+
+**Input:** `$ccgs-code-review src/gameplay/hit_reaction.gd`
+
+**Expected behavior:** The skill reports its findings and APPROVED verdict to
+the primary agent. It does not ask the game maker how to proceed merely
+because review completed. The primary agent continues to
+`$ccgs-story-done [story-path]`.
+
+**Assertions:**
+- [ ] APPROVED review emits no routine user-choice menu.
+- [ ] The review returns a clear verdict and findings to the primary agent.
+- [ ] An unresolved architecture decision still pauses and seeks a decision.
 
 ---
 
 ## Protocol Compliance
 
 - [ ] Reads source file(s) and coding standards before reviewing
-- [ ] Lists each coding standard check in findings output
+- [ ] Provides evidence for any standards failures it reports
 - [ ] Does not edit any source files (read-only skill)
-- [ ] No director gates are invoked
-- [ ] Verdict is one of: APPROVED, CONCERNS, NEEDS CHANGES
+- [ ] No mandatory director gate is invoked by this skill
+- [ ] Verdict is one of: NOT ASSESSED, APPROVED,
+      APPROVED WITH SUGGESTIONS, CHANGES REQUIRED
 
 ---
 

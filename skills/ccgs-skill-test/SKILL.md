@@ -51,14 +51,12 @@ If argument is missing or unrecognized, output usage and stop.
 For each skill being tested, read its `SKILL.md` fully and run all 7 checks:
 
 ### Check 1 — Required Frontmatter Fields
-The file must contain all of these in the YAML frontmatter block:
+The file must contain both Codex skill discovery fields in YAML frontmatter:
 - `name:`
 - `description:`
-- `argument-hint:`
-- `user-invocable:`
-- `allowed-tools:`
 
-**FAIL** if any are absent.
+`argument-hint`, `user-invocable`, and `allowed-tools` are optional
+metadata. **FAIL** only if `name` or `description` is absent or empty.
 
 ### Check 2 — Multiple Phases
 The skill must have ≥2 numbered phase headings. Look for patterns like:
@@ -94,13 +92,19 @@ satisfy this check.
 > A linter that cries wolf on 7% of the corpus stops being read.
 
 ### Check 4 — Collaborative Protocol Language
-The skill must contain ask-before-write language. Look for:
+For a writing skill, look for one of these authorization contracts:
 - `"May I write"` (canonical form)
 - `"before writing"` or `"approval"` near file-write instructions
 - `"ask"` + `"write"` in close proximity (within same section)
+- An approved-story-scope rule with explicit game-maker story approval
+  before implementation or evidence acceptance before status changes.
+  The approval must cover the write being checked; a mere mention of
+  approval elsewhere does not pass.
 
-**WARN** if absent (some read-only skills legitimately skip this).
-**FAIL** if `allowed-tools` includes `Write` or `Edit` but no ask-before-write language is found.
+**PASS** for a read-only skill, or for a writing skill with one of these
+contracts. **FAIL** for a writing skill that has no authorization rule.
+Do not infer read-only status from absent `allowed-tools` metadata; use
+the skill's stated outputs and workflow.
 
 ### Check 5 — Next-Step Handoff
 The skill must end with a recommended next action or follow-up path. Look for:
@@ -118,11 +122,12 @@ skills; simple skills should not use it.
 **WARN** if `context: fork` is set but fewer than 5 phases found.
 
 ### Check 7 — Argument Hint Plausibility
-`argument-hint` must be non-empty. If the skill body mentions multiple modes
+`argument-hint` is optional for Codex skills. If it is absent, PASS
+without warning. If present, it must be non-empty. If the skill body mentions multiple modes
 (e.g., "Mode A | Mode B"), the hint should reflect them. Cross-reference the
 hint against the first phase's "Parse Arguments" section.
 
-**WARN** if hint is `""` or if documented modes don't match hint.
+**WARN** if a present hint is `""` or if documented modes don't match it.
 
 ---
 
@@ -132,13 +137,13 @@ For a single skill:
 ```
 === Skill Static Check: /[name] ===
 
-Check 1 — Frontmatter Fields:    PASS
+Check 1 — Codex Frontmatter:     PASS (name, description)
 Check 2 — Multiple Phases:       PASS (7 phases found)
 Check 3 — Verdict Keywords:      PASS (PASS, FAIL, CONCERNS)
-Check 4 — Collaborative Protocol: PASS ("May I write" found)
+Check 4 — Write Authorization:  PASS (read-only / explicit approval / approved story scope)
 Check 5 — Next-Step Handoff:     WARN (no follow-up section found)
 Check 6 — Fork Context Complexity: PASS (8 phases, context: fork set)
-Check 7 — Argument Hint:         PASS
+Check 7 — Argument Hint:         PASS (optional and absent / valid if present)
 
 Verdict: WARNINGS (1 warning, 0 failures)
 Recommended: Add a "Follow-Up Actions" section at the end of the skill.
@@ -215,7 +220,8 @@ Mark each assertion:
   to replace.
 
 For **Protocol Compliance** assertions (always present):
-- Check whether the skill requires "May I write" before file writes
+- Check whether the skill has authorization before file writes, including
+  a story approval or final evidence acceptance that covers the write
 - Check whether the skill presents findings before requesting approval
 - Check whether the skill ends with a recommended next step
 - Check whether the skill avoids auto-creating files without approval
@@ -328,8 +334,9 @@ yet (first-run state).
 Glob `.agents/skills/*/SKILL.md` to get the complete list of skills.
 Extract skill name from each path (directory name).
 
-Also read the `agents:` section from `CCGS Skill Testing Framework/catalog.yaml` to get the
-complete list of agents.
+Glob `.codex/agents/*.toml` to get the complete project agent list.
+Compare it with the catalog's `agents:` section; report missing catalog
+entries instead of silently dropping an agent from coverage.
 
 ### Step 3 — Build Skill Coverage Table
 
@@ -342,7 +349,7 @@ For each skill:
 
 ### Step 3b — Build Agent Coverage Table
 
-For each agent in catalog's `agents:` section:
+For each agent TOML found in `.codex/agents/`:
 - Check if a spec file exists (use the `spec:` path from catalog, or glob `CCGS Skill Testing Framework/agents/*/[name].md`)
 - Look up `last_spec`, `last_spec_result`, `category` from catalog
 
@@ -352,8 +359,8 @@ For each agent in catalog's `agents:` section:
 === Skill Test Coverage Audit ===
 Date: [date]
 
-SKILLS (74 total)
-Specs written: 72 (97%) | Never static tested: 74 | Never category tested: 74
+SKILLS ([N actually found] total)
+Specs written: [S] ([percent]%) | Never static tested: [U] | Never category tested: [C]
 
 Skill                  | Cat      | Has Spec | Last Static | S.Result | Last Cat | C.Result | Priority
 -----------------------|----------|----------|-------------|----------|----------|----------|----------
@@ -361,8 +368,8 @@ gate-check             | gate     | YES      | never       | —        | never 
 design-review          | review   | YES      | never       | —        | never    | —        | critical
 ...
 
-AGENTS (49 total)
-Agent specs written: 49 (100%)
+AGENTS ([A actually found] total)
+Agent specs written: [T] ([percent]%)
 
 Agent                  | Category   | Has Spec | Last Spec   | Result
 -----------------------|------------|----------|-------------|--------

@@ -2,204 +2,225 @@
 
 ## Skill Summary
 
-`/dev-story` reads a story file, loads all required context (referenced ADR,
-TR-ID from the registry, control manifest, engine preferences), implements the
-story, verifies that all acceptance criteria are met, and marks the story
-Complete. The skill routes implementation to the correct specialist agent based
-on the engine and file type — it does not write source code directly.
-
-In `full` review mode, an LP-CODE-REVIEW gate runs before marking the story
-Complete. In `lean` or `solo` mode, LP-CODE-REVIEW is skipped and the story is
-marked Complete after the user confirms all criteria are met. The skill asks
-"May I write" before updating story status and before writing code files.
-
----
-
-## Static Assertions (Structural)
-
-Verified automatically by `/skill-test static` — no fixture needed.
-
-- [ ] Has required frontmatter fields: `name`, `description`, `argument-hint`, `user-invocable`, `allowed-tools`
-- [ ] Has ≥2 phase headings
-- [ ] Contains verdict keywords: COMPLETE, BLOCKED, IN PROGRESS, NEEDS CHANGES
-- [ ] Contains "May I write" collaborative protocol language (story status + code files)
-- [ ] Has a next-step handoff at the end (`/story-done`)
-- [ ] Documents LP-CODE-REVIEW gate: active in full mode, skipped in lean/solo
-- [ ] Notes that implementation is delegated to specialist agents (not done directly)
-
----
-
-## Director Gate Checks
-
-In `full` mode: LP-CODE-REVIEW gate runs after implementation is complete and all
-criteria are verified, before marking the story Complete.
-
-In `lean` mode: LP-CODE-REVIEW is skipped. Output notes:
-"LP-CODE-REVIEW skipped — lean mode". Story is marked Complete after user confirms.
-
-In `solo` mode: LP-CODE-REVIEW is skipped with equivalent notes.
-
----
+`$ccgs-dev-story` is the entry point for one story. It checks readiness, loads
+the governing context, presents one approval card, implements within that
+approved scope, verifies the result, and continues to `$ccgs-code-review`
+and `$ccgs-story-done`. The primary Codex agent owns the work. A specialist
+is consulted only for a bounded question that needs its expertise.
+`$ccgs-story-done` owns the final acceptance and Complete status.
 
 ## Test Cases
 
-### Case 1: Happy Path — Story implemented and marked Complete (full mode)
+### Case 1: Ready story needs approval before any implementation write
 
 **Fixture:**
-- A story file exists at `production/epics/[layer]/story-[name].md` with:
-  - `Status: Ready`
-  - A TR-ID referencing a registered requirement
-  - At least 2 Given-When-Then acceptance criteria
-  - A test evidence path
-- Referenced ADR has `Status: Accepted`
-- `docs/architecture/control-manifest.md` exists
-- `.claude/docs/technical-preferences.md` has engine and language configured
-- `production/session-state/review-mode.txt` contains `full`
+- A story has `Status: Ready`, valid context and dependencies, acceptance
+  criteria, `Handoff Class: Technical`, and a concrete Verification Method.
+- The readiness check returns READY.
+- The governing ADR is Accepted.
 
-**Input:** `/dev-story production/epics/[layer]/story-[name].md`
+**Input:** `$ccgs-dev-story production/epics/core/story-damage.md`
 
 **Expected behavior:**
-1. Skill reads the story file and all referenced context
-2. Skill verifies the ADR is Accepted (no block)
-3. Skill routes implementation to the correct specialist agent
-4. All acceptance criteria are verified as met
-5. LP-CODE-REVIEW gate spawns and returns APPROVED
-6. Skill asks "May I update story status to Complete?"
-7. Story status is updated to Complete
+1. Read the story and required context; run story-readiness.
+2. Show one card with story goal, in/out-of-scope files, every criterion, handoff
+   class, and verification method.
+3. Wait for `Approve this story` or `Revise the story`.
+4. Only after approval, record `Story Approval`, mark In Progress, implement,
+   run the prescribed checks, then continue to code-review and story-done.
+5. Do not set Complete; story-done owns that status.
 
 **Assertions:**
-- [ ] Skill reads story before spawning any agent
-- [ ] ADR status is checked before implementation begins
-- [ ] Implementation is delegated to a specialist agent (not done inline)
-- [ ] All acceptance criteria are confirmed before LP-CODE-REVIEW
-- [ ] LP-CODE-REVIEW appears in output as a completed gate
-- [ ] Story status is updated to Complete only after gate approval and user consent
-- [ ] Test file is written as part of implementation (not deferred)
+- [ ] No status, source, or test write precedes story approval.
+- [ ] The approval card contains all five required parts.
+- [ ] No reply or `Revise the story` stops implementation.
+- [ ] Approval is recorded in the story and session state before implementation.
+- [ ] The primary agent can implement directly; a programmer spawn is not mandatory.
+- [ ] Routine code and test files within approved scope need no further write prompt.
+- [ ] The same task continues through review and completion handoff.
 
 ---
 
-### Case 2: Failure Path — Referenced ADR is Proposed
+### Case 2: Proposed ADR blocks before the approval card
 
-**Fixture:**
-- A story file exists with `Status: Ready`
-- The story's TR-ID points to a requirement covered by an ADR with `Status: Proposed`
+**Fixture:** A Ready story references an ADR with `Status: Proposed`.
 
-**Input:** `/dev-story production/epics/[layer]/story-[name].md`
+**Input:** `$ccgs-dev-story production/epics/core/story-damage.md`
 
-**Expected behavior:**
-1. Skill reads the story file
-2. Skill resolves the TR-ID and reads the governing ADR
-3. ADR status is Proposed — skill outputs a BLOCKED message
-4. Skill names the specific ADR blocking the story
-5. Skill recommends running `/architecture-decision` to advance the ADR
-6. Implementation does NOT begin
+**Expected behavior:** Report BLOCKED with the ADR path and recommend
+`$ccgs-architecture-decision`. Do not ask the user to approve an unready story,
+change status, or start implementation.
 
 **Assertions:**
-- [ ] Skill does NOT begin implementation with a Proposed ADR
-- [ ] BLOCKED message names the specific ADR number and title
-- [ ] Skill recommends `/architecture-decision` as the next action
-- [ ] Story status remains unchanged (not set to In Progress or Complete)
+- [ ] The proposed ADR is named in the blocker.
+- [ ] No approval card or implementation write occurs.
 
 ---
 
-### Case 3: Ambiguous Acceptance Criteria — Skill asks for clarification
+### Case 3: A legacy story gets a proposed handoff at approval
 
-**Fixture:**
-- A story file exists with `Status: Ready`
-- Referenced ADR is Accepted
-- One acceptance criterion is ambiguous (not Given-When-Then; uses subjective language like "feels responsive")
+**Fixture:** A story passes its legacy readiness checks, but has no
+`Handoff Class` or `Verification Method`. Its Logic acceptance criteria
+describe an enemy hit reaction visible in play.
 
-**Input:** `/dev-story production/epics/[layer]/story-[name].md`
+**Input:** `$ccgs-dev-story production/epics/core/story-hit-reaction.md`
 
-**Expected behavior:**
-1. Skill reads the story and identifies the ambiguous criterion
-2. Before routing to the specialist, skill asks the user to clarify the criterion
-3. User provides a concrete, testable restatement
-4. Skill proceeds with implementation using the clarified criterion
-5. Skill does NOT guess at the intended behavior
+**Expected behavior:** Propose Player-facing and concrete build/test and play
+steps in the approval card. On approval, persist both fields and the approval
+date before writing implementation files. Do not silently classify Logic as
+Technical.
 
 **Assertions:**
-- [ ] Skill surfaces the ambiguous criterion before implementation starts
-- [ ] Skill asks for user clarification (not auto-interpretation)
-- [ ] Implementation begins only after clarification is provided
-- [ ] Clarified criterion is used in the test (not the original vague version)
+- [ ] The proposed class is Player-facing, not Technical.
+- [ ] The proposed method includes a configured build/test command, play steps,
+      and an evidence path.
+- [ ] Both fields are recorded only after the game maker approves the story.
 
 ---
 
-### Case 4: Edge Case — No argument; reads from session state
+### Case 4: Resumption respects the approval record
 
-**Fixture:**
-- No argument is provided
-- `production/session-state/active.md` references an active story file
-- That story file exists with `Status: In Progress`
+**Fixture A:** `Status: In Progress` and `Story Approval` is recorded in the
+story; session state names the same story and has no pending decision.
 
-**Input:** `/dev-story` (no argument)
+**Fixture B:** `Status: In Progress` but no approval is recorded.
 
-**Expected behavior:**
-1. Skill detects no argument is provided
-2. Skill reads `production/session-state/active.md`
-3. Skill finds the active story reference
-4. Skill confirms with user: "Continuing work on [story title] — is that correct?"
-5. After confirmation, skill proceeds with that story
+**Input:** `$ccgs-dev-story`
+
+**Expected behavior:** For A, resume from session state without repeating the
+story approval checkpoint. For B, show the missing approval record and ask
+before any further implementation edits.
 
 **Assertions:**
-- [ ] Skill reads session state when no argument is provided
-- [ ] Skill confirms the active story with the user before proceeding
-- [ ] Skill does NOT silently assume the active story without confirmation
-- [ ] If session state has no active story, skill asks which story to implement
+- [ ] A does not ask for the same approval again.
+- [ ] B does not infer approval from In Progress status.
+- [ ] A pending decision in session state prevents automatic resumption.
 
 ---
 
-### Case 5: Director Gate — LP-CODE-REVIEW returns NEEDS CHANGES; lean mode skips gate
+### Case 5: Scope change pauses before the edit
 
-**Fixture (full mode):**
-- Story is implemented and all criteria appear met
-- `production/session-state/review-mode.txt` contains `full`
-- LP-CODE-REVIEW gate returns NEEDS CHANGES with specific feedback
+**Fixture:** The approved story excludes `src/networking/`, but meeting a
+criterion now requires changing `src/networking/replication.gd`.
 
-**Full mode expected behavior:**
-1. LP-CODE-REVIEW gate spawns after implementation
-2. Gate returns NEEDS CHANGES with 2 specific issues
-3. Story status remains In Progress — NOT marked Complete
-4. User is shown the gate feedback and asked how to proceed
+**Input:** Continue `$ccgs-dev-story` for the approved story.
 
-**Assertions (full mode):**
-- [ ] Story is NOT marked Complete when LP-CODE-REVIEW returns NEEDS CHANGES
-- [ ] Gate feedback is shown to the user verbatim
-- [ ] Story status stays In Progress until issues are resolved and gate passes
+**Expected behavior:** Stop before changing that file, append the pending
+decision and affected path to `production/session-state/active.md`, present
+the revised scope, and wait. On approval, update the story and approval record
+before resuming.
 
-**Fixture (lean mode):**
-- Same story, `production/session-state/review-mode.txt` contains `lean`
+**Assertions:**
+- [ ] The out-of-scope file is untouched before the new decision.
+- [ ] The pending decision survives a resumed session.
+- [ ] No in-scope implementation is discarded while waiting.
 
-**Lean mode expected behavior:**
-1. Implementation completes
-2. LP-CODE-REVIEW gate is skipped — noted in output
-3. User is asked to confirm all criteria are met
-4. Story is marked Complete after user confirmation
+---
 
-**Assertions (lean mode):**
-- [ ] "LP-CODE-REVIEW skipped — lean mode" appears in output
-- [ ] Story is marked Complete after user confirms criteria (no gate required)
-- [ ] Skill does NOT block on a gate that is skipped
+### Case 6: Bounded specialist consultation
+
+**Fixture:** A Godot C# story has a specific post-cutoff engine API risk.
+
+**Input:** `$ccgs-dev-story production/epics/core/story-save.md`
+
+**Expected behavior:** The primary agent owns implementation and may consult
+`godot-csharp-specialist` about the named API risk. It reports whether that
+consultation ran or was skipped and retains the existing engine verification
+checks.
+
+**Assertions:**
+- [ ] No mandatory leadership hierarchy is used for ordinary implementation.
+- [ ] The specialist has a bounded question, not ownership of the whole story.
+- [ ] A missing specialist does not silently remove the engine verification gate.
+
+---
+
+### Case 7: Approval snapshot detects same-day scope drift
+
+**Fixture:** A story is In Progress with `Story Approval: 2026-09-23`.
+The latest session-state approval extract excludes
+`src/networking/replication.gd`. The story text now includes that file,
+but the approval date is still 2026-09-23.
+
+**Input:** Resume with `$ccgs-dev-story production/epics/core/story-save.md`.
+
+**Expected behavior:** Compare current scope and acceptance criteria against
+the latest approval extract. The matching date alone does not prove the
+changed scope was approved. Pause before editing the newly included file and
+show the revised approval card.
+
+**Assertions:**
+- [ ] Same-day story edits do not bypass the checkpoint.
+- [ ] The latest approved scope and criteria are the comparison baseline.
+- [ ] No out-of-scope edit occurs before revised approval.
+
+---
+
+### Case 8: Handoff fields drift without scope changes
+
+**Fixture:** An approved In Progress visible-combat story has matching scope
+and acceptance criteria. The latest approval extract says
+`Handoff Class: Player-facing` and names play steps. The story file now says
+`Handoff Class: Technical` and removes play from Verification Method.
+
+**Input:** Resume `$ccgs-dev-story`.
+
+**Expected behavior:** Compare the story's class and verification method
+with the latest approved extract. Stop before edits and request revised
+approval; matching scope and approval date do not authorize the changed
+handoff.
+
+**Assertions:**
+- [ ] Class and method drift each invalidate the recorded approval.
+- [ ] The story cannot resume merely because scope and criteria match.
+- [ ] The revised decision is preserved in session state.
+
+---
+
+### Case 9: Session handoff retains actual evidence
+
+**Fixture:** The approved story has a test file. The configured test
+command exits nonzero and the game run could not launch.
+
+**Input:** Complete `$ccgs-dev-story` implementation handoff.
+
+**Expected behavior:** The session extract records the exact test command
+and failed result, `Run result: NOT VERIFIED` with its reason, and the
+code-review verdict or `Pending`. Story-done reads these records and
+cannot mistake the test-file path for a passing test.
+
+**Assertions:**
+- [ ] Session state preserves verification command and actual result.
+- [ ] Session state preserves run result and reason.
+- [ ] Session state preserves review outcome or explicitly says Pending.
+
+---
+
+### Case 10: Explicit story path cannot bypass a pending decision
+
+**Fixture:** `production/session-state/active.md` records a pending
+scope decision for `production/epics/core/story-save.md`, including
+`src/networking/replication.gd`. The story is In Progress with an older
+approval snapshot.
+
+**Input:** `$ccgs-dev-story production/epics/core/story-save.md`
+
+**Expected behavior:** Load session state even though the story path was
+provided. Detect the matching pending decision, report it, and stop before
+any edit. Do not ask a separate "Continue?" question or treat the explicit
+path as approval to resume.
+
+**Assertions:**
+- [ ] Session state is checked for both implicit and explicit story lookup.
+- [ ] A pending decision for that story blocks implementation.
+- [ ] The excluded file remains untouched until revised approval.
 
 ---
 
 ## Protocol Compliance
 
-- [ ] Does NOT write source code directly — delegates to specialist agents
-- [ ] Reads all context (story, TR-ID, ADR, manifest, engine prefs) before implementation
-- [ ] "May I write" asked before updating story status and before writing code files
-- [ ] Skipped gates noted by name and mode in output
-- [ ] Updates `production/session-state/active.md` after story completion
-- [ ] Ends with next-step handoff: `/story-done`
-
----
-
-## Coverage Notes
-
-- Engine routing logic (Godot vs Unity vs Unreal) is not tested per engine —
-  the routing pattern is consistent; engine selection is a config fact.
-- Visual/Feel and UI story types (no automated test required) have different
-  evidence requirements and are not covered in these cases.
-- Integration story type follows the same pattern as Logic but with a different
-  evidence path — not independently fixture-tested.
+- [ ] Every new Ready story runs readiness before approval.
+- [ ] Both story checkpoints require the game maker in every automation mode.
+- [ ] Approved routine file edits require no separate file permission.
+- [ ] The story is never marked Complete by dev-story.
+- [ ] Skipped specialists and verification steps are named in the output.

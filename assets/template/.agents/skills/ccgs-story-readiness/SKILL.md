@@ -283,6 +283,18 @@ items pass or are explicitly marked N/A with a stated reason.
   identifying the test category (Logic / Integration / Visual/Feel / UI / Config/Data).
   Without this, test evidence requirements cannot be enforced at story close.
   Fix: Add `Type: [Logic|Integration|Visual/Feel|UI|Config/Data]` to the story header.
+- [ ] **Handoff class and verification method**: Check `Handoff Class:` in the
+  story header and `Verification Method:` in `## Test Evidence`. Valid classes
+  are `Player-facing`, `Technical`, and `Mixed`; do not infer one from `Type:`.
+  The method must name a concrete build/test command or manual check, an
+  expected evidence path, and playable setup/steps for Player-facing or Mixed
+  stories. For those classes, also require the configured build/test command
+  when `project.yaml` provides one. A present but invalid class or vague
+  method such as "test it" is NEEDS WORK; name the exact field and fix. If
+  either field is absent on a
+  pre-checkpoint story, report `ADVISORY: classify at the dev-story approval
+  checkpoint`. Absence alone does not downgrade an otherwise READY legacy
+  story; `$ccgs-dev-story` must fill the fields before implementation.
 - [ ] **Test evidence requirement is clear** *(auto-pass at `qa.level: minimal` — no
   test evidence is required, so this item never blocks)*: If the Story Type is set,
   the story includes a `## Test Evidence` section stating where evidence will be stored

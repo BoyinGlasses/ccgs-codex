@@ -35,6 +35,8 @@ and `/story-readiness` + `/dev-story`.
 - Every story file contains an `ADR Governing Implementation:` line referencing at least one ADR, or an explicit `No ADR applies` note
 - Every story file has a `Status:` field — either `Ready` or `Blocked` (if the governing ADR is `Proposed`)
 - Every story file has a `Type:` field — one of: Logic, Integration, Visual/Feel, UI, Config/Data
+- Every story file has `Handoff Class: Player-facing | Technical | Mixed`, derived from its acceptance criteria rather than `Type:`. A Logic story with player-visible behavior can be Player-facing.
+- Every story file has a `Verification Method:` in `## Test Evidence` naming concrete build/test or manual steps and the expected evidence path. Player-facing or Mixed stories also name play setup and any configured build/test command. This handoff remains required when `qa.level: minimal` waives automated test evidence.
 - Every story file has a `Manifest Version:` field matching the date from `docs/architecture/control-manifest.md`'s header at time of writing
 - Every story file has a `## Test Evidence` section stating the expected evidence location for its type
 - Every story file has a `## Acceptance Criteria` section with at least one checkbox item copied from the GDD
@@ -61,7 +63,7 @@ and `/story-readiness` + `/dev-story`.
 **Next skill:** /story-readiness (then /dev-story)
 
 It will read:
-- Each `story-NNN-[slug].md` file — specifically: `Status:`, `Type:`, `Manifest Version:` (header), `TR-[system]-NNN` (in `## Context`), `ADR Governing Implementation:` line, `## Acceptance Criteria` section, `## Test Evidence` section, `## Dependencies` section
+- Each `story-NNN-[slug].md` file — specifically: `Status:`, `Type:`, `Handoff Class:`, `Manifest Version:` (header), `TR-[system]-NNN` (in `## Context`), `ADR Governing Implementation:` line, `## Acceptance Criteria` section, `## Test Evidence` section with `Verification Method:`, `## Dependencies` section
 - `docs/architecture/control-manifest.md` — to compare its `Manifest Version:` against the story's embedded version
 - The referenced ADR file — to verify its `Status:` field is still `Accepted`
 

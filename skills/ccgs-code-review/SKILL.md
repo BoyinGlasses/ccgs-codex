@@ -82,7 +82,15 @@ Look for patterns like `ADR-NNN` or `docs/architecture/ADR-`.
 
 If no ADR references found, note: "No ADR references found — ADR compliance check skipped. For full ADR compliance review, provide the story path: `$ccgs-code-review [files] [story-path]`."
 
-For each referenced ADR, load **only the sections this check needs — never an unbounded full read.** A substantial ADR exceeds the 25k-token `Read` cap, and a capped read's only recovery is paging the remainder — the most expensive way to read a file (measured ~103k vs ~54k tokens on a 34k-token ADR). Use the same pattern as `$ccgs-dev-story` and `$ccgs-create-stories`:
+For each referenced ADR, read its `## Status` value first. A `Proposed`
+ADR is an `ARCHITECTURE RISK` and unresolved decision: report CHANGES REQUIRED and
+pause the active story for the game maker before treating it as governing
+implementation. An unreadable status is NOT ASSESSED, not Accepted.
+Then load **only the sections this check needs — never an unbounded full
+read.** A substantial ADR exceeds the 25k-token `Read` cap, and a capped
+read's only recovery is paging the remainder — the most expensive way to
+read a file (measured ~103k vs ~54k tokens on a 34k-token ADR). Use the
+same pattern as `$ccgs-dev-story` and `$ccgs-create-stories`:
 
 1. **Map the headings** (cheap — line numbers only): `Grep pattern="^## " path="[adr-file]" output_mode="content" -n`
 2. **Bounded-read only `## Decision` and `## Consequences`**, using the line numbers to set `Read(offset, limit)` spans that end where the next heading begins. If the heading map is empty (a nonstandard ADR predating the template), fall back to one full `Read`; if that truncates at the cap, grep for the decision/consequence content directly rather than paging the remainder.
@@ -138,7 +146,10 @@ Identify the system category (engine, gameplay, AI, networking, UI, tools) and e
 
 ## Phase 7: Specialist Reviews (Parallel)
 
-Spawn all applicable specialists simultaneously via `Agent` — do not wait for one before starting the next.
+Consult applicable specialists only for bounded findings that need engine,
+language, UI, or QA expertise. If independent consultations are needed,
+run them in parallel and collect all results. The primary agent owns the
+review verdict; a skipped specialist is named in the report.
 
 > **Verify every specialist finding before reporting it. Do not pass findings
 > through unchecked.** For each finding, record in the report:
@@ -161,18 +172,22 @@ Spawn all applicable specialists simultaneously via `Agent` — do not wait for 
 
 ### Engine Specialists
 
-If an engine is configured, determine which specialist applies to each file and spawn in parallel:
+If an engine is configured and a bounded question needs specialist judgment,
+choose the relevant specialist for the file:
 
 - Primary language files (`.gd`, `.cs`, `.cpp`) → Language/Code Specialist
 - Shader files (`.gdshader`, `.hlsl`, shader graph) → Shader Specialist
 - UI screen/widget code → UI Specialist
 - Cross-cutting or unclear → Primary Specialist
 
-Also spawn the **Primary Specialist** for any file touching engine architecture (scene structure, node hierarchy, lifecycle hooks).
+Consult the **Primary Specialist** for a specific scene-structure, lifecycle,
+or architecture uncertainty when the primary review cannot settle it from
+the source and governing engine reference.
 
 ### QA Testability Review
 
-For Logic and Integration stories, also spawn `qa-tester` via `Agent` in parallel with the engine specialists. Pass:
+For Logic and Integration stories with a concrete testability uncertainty,
+consult `qa-tester` on that question. Pass:
 - The implementation files being reviewed
 - The story's `## QA Test Cases` section (the pre-written test specs from qa-lead)
 - The story's `## Acceptance Criteria`
@@ -186,7 +201,9 @@ Ask the qa-tester to evaluate:
 
 For Visual/Feel and UI stories: qa-tester reviews whether the manual verification steps in `## QA Test Cases` are achievable with the implementation as written — e.g., "is the state the manual checker needs to reach actually reachable?"
 
-Collect all specialist findings before producing output.
+Collect any consulted specialists' findings before producing output. If
+none were needed, say `Specialist consultation: SKIPPED — no bounded
+question` rather than implying a specialist ran.
 
 ---
 
@@ -235,17 +252,19 @@ This skill is read-only — no files are written.
 
 ## Phase 9: Next Steps
 
-Use `Codex user-input tool`:
-- Prompt: "Code review complete — verdict: [NOT ASSESSED / APPROVED / CHANGES REQUIRED / MAJOR REVISION]. How would you like to proceed?"
-- Options (adjust based on verdict):
-  - If APPROVED:
-    - `[A] Run $ccgs-story-done to mark the story complete`
-    - `[B] Stop here`
-  - If CHANGES REQUIRED or MAJOR REVISION:
-    - `[A] Fix the issues and re-run $ccgs-code-review`
-    - `[B] Run $ccgs-story-done anyway with noted exceptions`
-    - `[C] Stop here`
+Return the Phase 8 findings and verdict to the primary agent. For an
+APPROVED or APPROVED WITH SUGGESTIONS review in an active approved story,
+do not open a routine user-choice menu; the primary agent continues to
+`$ccgs-story-done [story-path]` in the same task. For CHANGES REQUIRED,
+the primary agent fixes in-scope issues and reruns affected checks before
+the final handoff. It records unresolved findings as limitations.
+
+An unresolved architecture decision, new scope, acceptance-criteria change,
+or engine change is a product decision. Pause related work and ask the game
+maker in every automation mode with the finding, recommendation, and effect
+on the approved story.
+Do not assume review approval or silently revise an ADR.
 
 If an ARCHITECTURAL VIOLATION is found:
-- If the violation contradicts an **existing ADR**: fix the implementation to comply with `docs/architecture/[adr-file].md`. If the design has legitimately changed, run `$ccgs-architecture-decision` to formally *revise* the existing ADR — do not create a competing one.
-- If **no ADR exists** for the pattern that was violated: run `$ccgs-architecture-decision` to document the correct approach before fixing the code.
+- If the violation contradicts an **existing ADR**: fix the implementation to comply with `docs/architecture/[adr-file].md`. If the design has legitimately changed, ask the game maker to approve the decision, then run `$ccgs-architecture-decision` to revise the existing ADR — do not create a competing one.
+- If **no ADR exists** for the pattern that was violated: ask the game maker to approve the architecture direction, then run `$ccgs-architecture-decision` before fixing the code.
