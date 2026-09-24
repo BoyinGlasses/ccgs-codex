@@ -156,6 +156,46 @@ show the revised approval card.
 
 ---
 
+### Case 8: Handoff fields drift without scope changes
+
+**Fixture:** An approved In Progress visible-combat story has matching scope
+and acceptance criteria. The latest approval extract says
+`Handoff Class: Player-facing` and names play steps. The story file now says
+`Handoff Class: Technical` and removes play from Verification Method.
+
+**Input:** Resume `$ccgs-dev-story`.
+
+**Expected behavior:** Compare the story's class and verification method
+with the latest approved extract. Stop before edits and request revised
+approval; matching scope and approval date do not authorize the changed
+handoff.
+
+**Assertions:**
+- [ ] Class and method drift each invalidate the recorded approval.
+- [ ] The story cannot resume merely because scope and criteria match.
+- [ ] The revised decision is preserved in session state.
+
+---
+
+### Case 9: Session handoff retains actual evidence
+
+**Fixture:** The approved story has a test file. The configured test
+command exits nonzero and the game run could not launch.
+
+**Input:** Complete `$ccgs-dev-story` implementation handoff.
+
+**Expected behavior:** The session extract records the exact test command
+and failed result, `Run result: NOT VERIFIED` with its reason, and the
+code-review verdict or `Pending`. Story-done reads these records and
+cannot mistake the test-file path for a passing test.
+
+**Assertions:**
+- [ ] Session state preserves verification command and actual result.
+- [ ] Session state preserves run result and reason.
+- [ ] Session state preserves review outcome or explicitly says Pending.
+
+---
+
 ## Protocol Compliance
 
 - [ ] Every new Ready story runs readiness before approval.

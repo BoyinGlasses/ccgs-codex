@@ -108,6 +108,16 @@ Read the full story file. Extract and hold in context:
 - **Definition of Done** — if present, the story-level DoD
 - **Estimated vs actual scope** — if an estimate was noted
 
+Before assessing criteria or presenting acceptance, read the latest
+approval extract in `production/session-state/active.md`. Compare the
+story's current scope, acceptance criteria, Handoff Class, and
+Verification Method with that approved extract. A date alone is not
+proof that changed fields were approved. If the extract is missing or
+any field differs, report `NOT ASSESSED — story approval drift` with
+the changed fields and return to `$ccgs-dev-story` for revised
+approval. Do not offer Technical acceptance, waive play, or write
+`Status: Complete` while approval is unverified.
+
 Also read:
 - `docs/architecture/tr-registry.yaml` — grep the story's TR-IDs
   (`Grep pattern="id: <each TR-ID>" path="docs/architecture/tr-registry.yaml" output_mode="content" -A 6`),
@@ -146,7 +156,11 @@ three methods:
 
 - Criteria about subjective qualities ("feels responsive", "animations play correctly")
 - Criteria about gameplay behaviour ("player takes damage when...", "enemy responds to...")
-- Performance criteria ("completes within Xms") — ask if profiled or accept as assumed
+- Performance criteria ("completes within Xms") — require an actual timing
+  measurement and retained command/report. Without one, record
+  `NOT VERIFIED — no timing measurement`; an estimate or assertion that it
+  is "probably fast enough" is not PASS. Any explicit override keeps the
+  original gap and risk in Completion Notes.
 
 Collect manual checks for the final evidence report. When the game maker must
 confirm one or more criteria, include them in the single final acceptance

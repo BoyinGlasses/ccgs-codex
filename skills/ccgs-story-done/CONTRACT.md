@@ -11,6 +11,9 @@ It remains the final step of the primary agent's story task.
 - Story file with `Status: In Progress`, `Story Approval`, `Handoff Class`,
   `Verification Method`, `Type`, acceptance criteria, scope, governing
   requirements, and `## Test Evidence`.
+- The latest approval extract in session state must match current scope,
+  criteria, Handoff Class, and Verification Method. A missing or different
+  extract stops completion and routes to revised story approval.
 - `production/session-state/active.md` with story path, changed files,
   verification result, run result, review verdict, and pending decisions.
 - Source/test/evidence artifacts produced by dev-story, plus relevant GDD,

@@ -38,20 +38,22 @@ owns the story decision. Specialists answer bounded questions when useful.
 | Artifact | Contract |
 | --- | --- |
 | Story file | After approval, persist Handoff Class and Verification Method if missing, `**Story Approval**: YYYY-MM-DD`, then `Status: In Progress` and Last Updated. Never write Complete. |
-| `production/session-state/active.md` | Record story path, approval, handoff, changed files, verification result, next step, and any pending decision. Create if absent. |
+| `production/session-state/active.md` | Record story path, approved scope/criteria/class/method, changed files, exact verification command and result, run result, review verdict or Pending, next step, and any pending decision. Create if absent. |
 | Source and test files | The primary agent implements within approved scope at the resolved code root. Logic/Integration tests follow `## Test Evidence` unless waived at `qa.level: minimal`. No per-file write prompt is needed. |
 | Evidence | Report executed build/test commands and results. For anything player-observable, run and retain visual evidence when possible; otherwise state `NOT VERIFIED — <reason>`. |
 | Specialist consultation | Use a bounded question for a named risk; report the result, skip, or `NOT ASSESSED — specialist unavailable`. Missing consultation never counts as engine verification. |
 
 ## Decision Boundaries
 
-- Stop before an out-of-scope file edit, acceptance-criteria change,
+- Stop before an out-of-scope file edit, acceptance-criteria or approved
+  handoff-field change,
   consequential gameplay or architecture choice, or engine change. Append
   the pending decision to session state and preserve in-scope work. Resume
   only after the game maker approves the revised story and the pending
   decision is cleared.
 - An approved In Progress story with no pending decision resumes without
-  repeating approval only when the story's scope and criteria match the
+  repeating approval only when the story's scope, criteria, Handoff Class,
+  and Verification Method match the
   latest approval extract in session state. Drift or In Progress without an
   approval record needs the card before further implementation edits.
 - Run relevant parse/build/test and run-observe checks. A partial specialist

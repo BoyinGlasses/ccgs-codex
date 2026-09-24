@@ -274,6 +274,46 @@ in-scope fixes in the same story.
 
 ---
 
+### Case 10: Direct completion call rejects changed handoff
+
+**Fixture:** A story is In Progress and has a Story Approval date. The
+latest approval extract says Player-facing with play steps. The story file
+now says Technical with no play steps; scope and criteria are unchanged.
+
+**Input:** `$ccgs-story-done production/epics/core/story-hit-reaction.md`
+
+**Expected behavior:** Compare all approved handoff fields with the
+latest extract before assessing evidence. Report approval drift and
+return to the story approval checkpoint. Do not offer Technical
+acceptance or write Complete.
+
+**Assertions:**
+- [ ] Direct story-done entry validates approved class and method.
+- [ ] Mismatch cannot waive game-maker play.
+- [ ] No completion-status write occurs.
+
+---
+
+### Case 11: Unmeasured performance stays unverified
+
+**Fixture:** A Technical story requires a save operation under 10 ms.
+No profiler run or retained timing result exists. A person says it is
+"probably fast enough".
+
+**Input:** `$ccgs-story-done production/epics/core/story-save.md`
+
+**Expected behavior:** Report the performance criterion
+`NOT VERIFIED — no timing measurement`. Present the gap at the final
+checkpoint. Do not count an assumption as PASS or close without an
+explicit named-gap override.
+
+**Assertions:**
+- [ ] Performance criteria require a measurement or NOT VERIFIED.
+- [ ] An assumed performance result never becomes PASS.
+- [ ] The original gap and risk remain in Completion Notes if overridden.
+
+---
+
 ## Protocol Compliance
 
 - [ ] Requires game-maker acceptance before status and completion-note writes

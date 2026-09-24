@@ -69,11 +69,12 @@ are not required (`minimal`), the Phase 5 `testing.strict` gate is a no-op.
 story. If found, confirm: "Continuing work on [story title] — is that correct?"
 Read the story's `Status:` and `**Story Approval**:` fields and the latest
 approval extract and pending decision in session state. An In Progress story
-with recorded approval, matching scope and criteria, and no pending decision
-resumes without repeating the story approval checkpoint. If approval is
-missing, scope or criteria drifted, or a decision is pending, do not infer
-consent from In Progress status; show the approval card or pending decision
-before edits.
+with recorded approval, matching scope, criteria, Handoff Class, and
+Verification Method, and no pending decision resumes without repeating the
+story approval checkpoint. If approval is missing, any of those approved
+fields drifted, or a decision is pending, do not infer consent from In
+Progress status; show the revised approval card and record the pending
+decision before edits.
 If not found, ask: "Which story are we implementing?" Glob
 `production/epics/**/*.md` and list stories with Status: Ready.
 
@@ -271,8 +272,9 @@ ADR or manifest version update held above, then write
 approval date, exact approved scope/Out of Scope text, all acceptance criteria,
 handoff class, verification method, and `Pending decision: None` to
 `production/session-state/active.md`. If the file does not exist, create
-it. On resume, compare the story's current scope and criteria against the
-latest approval extract. Any drift needs the revised approval card before
+it. On resume, compare the story's current scope, criteria, Handoff Class,
+and Verification Method against the latest approval extract. Any drift
+needs the revised approval card before
 edits, even if the approval date is still today. An approved In Progress
 resume with no pending decision and no drift skips this card.
 The approval covers routine source, test, and evidence-file edits within scope;
@@ -429,8 +431,9 @@ The primary agent should:
 - Write clean, doc-commented public APIs
 
 If implementation discovers a required file outside the approved scope, a
-change to acceptance criteria, a consequential gameplay or architecture
-choice, or an engine change, stop before making that change. Append
+change to acceptance criteria or either handoff field, a consequential
+gameplay or architecture choice, or an engine change, stop before making
+that change. Append
 `Pending decision: [story path, affected file or decision, proposed scope]`
 to `production/session-state/active.md`; keep completed in-scope work.
 Present the revised story approval card and wait. On approval, update the
@@ -623,6 +626,9 @@ Silently append to `production/session-state/active.md`:
 - Story: [story-path] — [story title]
 - Files changed: [comma-separated list]
 - Test written: [path, or "None — Visual/Feel/Config story"]
+- Verification: [exact command and exit/result | NOT VERIFIED — reason]
+- Run result: [OBSERVED — description and retained path | NOT VERIFIED — reason | N/A — reason]
+- Code review: Pending
 - Blockers: [None, or description]
 - Next: $ccgs-code-review [files] then $ccgs-story-done [story-path]
 ```
@@ -630,7 +636,10 @@ Silently append to `production/session-state/active.md`:
 Create `active.md` if it does not exist. Confirm: "Session state updated."
 
 Continue in this same task to `$ccgs-code-review [changed files]`, resolve
-in-scope required fixes and re-run affected checks, then invoke
+in-scope required fixes and re-run affected checks. Append
+`Code review result: [verdict and unresolved findings]` to
+`production/session-state/active.md` after review; if review did not run,
+append `Code review result: NOT ASSESSED — <reason>`. Then invoke
 `$ccgs-story-done [story-path]` for the final human acceptance checkpoint.
 Do not ask the user to start these skills manually.
 
