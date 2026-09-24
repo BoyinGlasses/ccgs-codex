@@ -49,12 +49,11 @@ decision pauses for the game maker.
 1. Skill reads the source file
 2. Skill checks all coding standards: doc comments, DI, data-driven, ADR status
 3. All checks pass
-4. Skill outputs findings summary with all checks PASS
+4. Skill outputs the overall standards score and an APPROVED verdict
 5. Verdict is APPROVED
 
 **Assertions:**
-- [ ] Each coding standard check is listed in the output
-- [ ] All checks show PASS when standards are met
+- [ ] The standards score reflects the clean fixture
 - [ ] Skill reads referenced ADR to confirm its status
 - [ ] Verdict is APPROVED
 - [ ] No edits are made to any file
@@ -75,15 +74,14 @@ decision pauses for the game maker.
 1. Skill reads the source file
 2. Skill detects: 2 missing doc comments on public methods
 3. Skill detects: singleton usage at specific lines (e.g., line 42, line 87)
-4. Findings list the exact method names and line numbers
+4. Findings identify the issue types with supporting locations
 5. Verdict is CHANGES REQUIRED
 
 **Assertions:**
-- [ ] Missing doc comments are listed with method names
+- [ ] Missing doc comments are identified
 - [ ] Singleton usage is flagged with file and line number
 - [ ] Verdict is CHANGES REQUIRED when blocking standard violations exist
 - [ ] Skill does not edit the file — findings are for the developer to act on
-- [ ] Output suggests replacing singleton with dependency injection
 
 ---
 
@@ -125,14 +123,11 @@ decision pauses for the game maker.
 1. Skill attempts to read files in `src/networking/`
 2. Directory or files not found
 3. Skill outputs an error: "No source files found at `src/networking/`"
-4. Skill suggests the configured engine code root (`src/` for Godot,
-   `Assets/` for Unity, or `Source/` for Unreal)
-5. Verdict is `NOT ASSESSED — NO DATA` (nothing was reviewed)
+4. Verdict is `NOT ASSESSED — NO DATA` (nothing was reviewed)
 
 **Assertions:**
 - [ ] Skill does not crash when path does not exist
 - [ ] Output names the attempted path in the error message
-- [ ] Output suggests the configured engine code root for valid paths
 - [ ] No APPROVED or clean verdict is emitted when there is nothing to review
 - [ ] The output reports NOT ASSESSED and names the missing path
 
@@ -185,7 +180,7 @@ because review completed. The primary agent continues to
 ## Protocol Compliance
 
 - [ ] Reads source file(s) and coding standards before reviewing
-- [ ] Lists each coding standard check in findings output
+- [ ] Provides evidence for any standards failures it reports
 - [ ] Does not edit any source files (read-only skill)
 - [ ] No mandatory director gate is invoked by this skill
 - [ ] Verdict is one of: NOT ASSESSED, APPROVED,

@@ -26,9 +26,7 @@ not a filled-in report.** Check first, and stop if the check fails.
    reads the template next.
 4. If **every** required input is ABSENT, stop and report
    **`NOT ASSESSED — NO DATA`** as the whole verdict, naming what was missing and
-   which skill produces it. When the requested file or directory is missing,
-   repeat that path and suggest the configured code root (`src/` for Godot,
-   `Assets/` for Unity, or `Source/` for Unreal) so the caller can retry.
+   which skill produces it.
 
 **A verdict of `NOT ASSESSED` is a success.** It is the correct, useful answer to
 "what does the data say?" when there is no data. The failure mode this prevents is
@@ -115,16 +113,6 @@ Identify the system category (engine, gameplay, AI, networking, UI, tools) and e
 - [ ] Dependencies are injected (no static singletons for game state)
 - [ ] Configuration values loaded from data files
 - [ ] Systems expose interfaces (not concrete class dependencies)
-
-Report each of these six checks as PASS, FAIL, or NOT ASSESSED. For a FAIL,
-include file, line, method or class name, concrete consequence, and the
-smallest relevant fix. For singleton state, suggest passing the dependency
-to the owner rather than replacing it with another global. A single
-advisory magic value with no demonstrated behavioral or ADR violation is
-APPROVED WITH SUGGESTIONS; a documented forbidden pattern, broken
-acceptance criterion, or architectural violation is CHANGES REQUIRED.
-An essential check that could not run makes the verdict NOT ASSESSED, not
-APPROVED.
 
 ---
 
@@ -235,14 +223,7 @@ question` rather than implying a specialist ran.
 [List each ADR checked, result, and any deviations with severity]
 
 ### Standards Compliance: [X/6 passing]
-| Check | Result | Evidence or fix |
-| --- | --- | --- |
-| Public API comments | [PASS / FAIL / NOT ASSESSED] | [method/class and line, or reason unavailable] |
-| Complexity | [PASS / FAIL / NOT ASSESSED] | [method and line, or reason unavailable] |
-| Method length | [PASS / FAIL / NOT ASSESSED] | [method and line, or reason unavailable] |
-| Dependency injection | [PASS / FAIL / NOT ASSESSED] | [owner and line; suggest injected dependency for singleton state] |
-| Data-driven values | [PASS / FAIL / NOT ASSESSED] | [value and line, or reason unavailable] |
-| Interface boundaries | [PASS / FAIL / NOT ASSESSED] | [class and line, or reason unavailable] |
+[List failures with line references]
 
 ### Architecture: [NOT ASSESSED / CLEAN / MINOR ISSUES / VIOLATIONS FOUND]
 [List specific architectural concerns]
