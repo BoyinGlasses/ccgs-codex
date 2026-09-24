@@ -63,20 +63,24 @@ are not required (`minimal`), the Phase 5 `testing.strict` gate is a no-op.
 
 ## Phase 1: Find the Story
 
-**If a path is provided**: read that file directly.
+Resolve the story path first:
 
-**If no argument**: check `production/session-state/active.md` for the active
-story. If found, confirm: "Continuing work on [story title] — is that correct?"
-Read the story's `Status:` and `**Story Approval**:` fields and the latest
-approval extract and pending decision in session state. An In Progress story
-with recorded approval, matching scope, criteria, Handoff Class, and
-Verification Method, and no pending decision resumes without repeating the
-story approval checkpoint. If approval is missing, any of those approved
-fields drifted, or a decision is pending, do not infer consent from In
-Progress status; show the revised approval card and record the pending
-decision before edits.
-If not found, ask: "Which story are we implementing?" Glob
-`production/epics/**/*.md` and list stories with Status: Ready.
+- **If a path is provided**: read that story file.
+- **If no path is provided**: read `production/session-state/active.md` and
+  use its active story. If there is no active story, ask which story and list
+  Ready stories from `production/epics/**/*.md`.
+
+After resolving the path, always read `production/session-state/active.md`
+when it exists, including when the caller supplied the path. Select the latest
+approval extract and pending decision for this exact story path. Read the
+story's `Status:` and `**Story Approval**:` fields and compare its current
+scope, criteria, Handoff Class, and Verification Method with the approved
+extract. Do not ask a separate "Continue?" question: a matching approved
+In Progress story resumes automatically. If approval is missing, any approved
+field drifted, or a pending decision exists for this story, do not infer
+consent from In Progress status; show the revised approval card and record the
+pending decision before edits. A pending decision for a different story does
+not change this story's approval state.
 
 ---
 

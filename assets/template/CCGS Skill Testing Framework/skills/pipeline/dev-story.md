@@ -142,7 +142,7 @@ The latest session-state approval extract excludes
 `src/networking/replication.gd`. The story text now includes that file,
 but the approval date is still 2026-09-23.
 
-**Input:** Resume `$ccgs-dev-story` for that story.
+**Input:** Resume with `$ccgs-dev-story production/epics/core/story-save.md`.
 
 **Expected behavior:** Compare current scope and acceptance criteria against
 the latest approval extract. The matching date alone does not prove the
@@ -193,6 +193,27 @@ cannot mistake the test-file path for a passing test.
 - [ ] Session state preserves verification command and actual result.
 - [ ] Session state preserves run result and reason.
 - [ ] Session state preserves review outcome or explicitly says Pending.
+
+---
+
+### Case 10: Explicit story path cannot bypass a pending decision
+
+**Fixture:** `production/session-state/active.md` records a pending
+scope decision for `production/epics/core/story-save.md`, including
+`src/networking/replication.gd`. The story is In Progress with an older
+approval snapshot.
+
+**Input:** `$ccgs-dev-story production/epics/core/story-save.md`
+
+**Expected behavior:** Load session state even though the story path was
+provided. Detect the matching pending decision, report it, and stop before
+any edit. Do not ask a separate "Continue?" question or treat the explicit
+path as approval to resume.
+
+**Assertions:**
+- [ ] Session state is checked for both implicit and explicit story lookup.
+- [ ] A pending decision for that story blocks implementation.
+- [ ] The excluded file remains untouched until revised approval.
 
 ---
 
